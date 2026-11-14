@@ -1,6 +1,6 @@
 # 当前能力与适用范围
 
-核对日期2026-11-14。GitHub/npm已发布版本为`0.5.3`；本表记录该版本证据与限制。历史验证见[VALIDATION.md](VALIDATION.md)，调用见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)、[ENGINES.md](ENGINES.md)。
+核对日期2026-11-14。GitHub/npm `0.5.3`均已发布；本表记录`0.5.3`源码证据与限制。历史验证见[VALIDATION.md](VALIDATION.md)，调用见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)、[ENGINES.md](ENGINES.md)。
 
 项目/npm/协议服务名均为android-reserve-mcp；OpenCode连接/主模式为android-reserve，工具前缀android-reserve_。共有20个分组入口：doctor、apk、decode、dex、packages、managed、evidence、webview、search、resources、native、artifact、script、framework、device、frida、rebuild、jobs、artifacts、guidance。入口内多种action不单独计工具；后端全部工具数不代表本服务工具数。
 

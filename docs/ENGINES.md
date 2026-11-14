@@ -1,6 +1,6 @@
 # 引擎配置与新增能力使用
 
-适用0.5.2及明确标注的未发行工作树。最新增量、调用与边界见CURRENT-INCREMENT.md。所有引擎按需使用，不自动安装、升级或清理外部工具。完整依赖见ENVIRONMENT.md，私有安装见ENGINE-SETUP.md。
+适用0.5.3及历史版本快照。最新增量、调用与边界见CURRENT-INCREMENT.md。所有引擎按需使用，不自动安装、升级或清理外部工具。完整依赖见ENVIRONMENT.md，私有安装见ENGINE-SETUP.md。
 
 Unity、Unreal、HarmonyOS NEXT自2026-11-14起暂缓。下表IL2CPP/Ark仅保留现有固定CLI适配，不列为近期安装或验收任务，不代表对应框架已通过；恢复需用户明确安排。
 

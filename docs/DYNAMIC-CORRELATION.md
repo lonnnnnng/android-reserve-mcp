@@ -1,6 +1,6 @@
-# 框架动态关联（未发行源码）
+# 框架动态关联
 
-2026-11-14。GitHub/npm已发布版本为0.5.3，包含以下动态关联action。仍为20个分组工具入口。验证设备为POCO F2 Pro、Android16/LineageOS23.2、ARM64；REA6.9.0设备binding/server17.23.2，宿主bundle编译器frida-compile19.1.0、bridge7.0.13。不能把单一样本通过推广到所有框架版本。
+2026-11-14。GitHub/npm `0.5.3`均已发布；本版本包含以下动态关联action。仍为20个分组工具入口。验证设备为POCO F2 Pro、Android16/LineageOS23.2、ARM64；REA6.9.0设备binding/server17.23.2，宿主bundle编译器frida-compile19.1.0、bridge7.0.13。不能把单一样本通过推广到所有框架版本。
 
 ## Java/RN请求与回复
 

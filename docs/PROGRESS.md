@@ -59,4 +59,4 @@ Java/APK/资源/重建签名、mapping、JS AST/source map、独占Native target
 
 Unity、Unreal、HarmonyOS NEXT按用户决定短期不再推进，移出当前迭代及发版门槛。历史缺口、已有通用能力与IL2CPP/Ark适配保留，不标为已完成；恢复需用户明确安排，条件见[本轮进展](CURRENT-INCREMENT.md)。Godot与其他Android方向不受此调整影响。
 
-本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`v0.5.2`通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。GitHub Actions的Ubuntu/macOS任务均成功。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。GitHub Release/npm 0.5.2均已发布；本轮增量未发行。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。
+本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`v0.5.2`通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。GitHub Actions的Ubuntu/macOS任务均成功。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。动态关联增量已进入 GitHub/npm `0.5.3`。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。

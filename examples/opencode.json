@@ -1,13 +1,14 @@
 {
   "mcp": {
-    "android-reserve": {
-      "type": "local",
-      "command": ["node", "/absolute/path/android-reserve-mcp/src/cli.js", "--allowedRoots", "/absolute/path/apk-projects"],
-      "enabled": true,
-      "timeout": 30000,
-      "environment": {
-        "REA_JADX_HEAP_MIB": "4096",
-        "REA_JADX_ACTIVE_PROCESSOR_COUNT": "2"
+    "servers": {
+      "android-reserve": {
+        "type": "local",
+        "command": ["node", "/absolute/path/android-reserve-mcp/src/cli.js", "--allowedRoots", "/absolute/path/apk-projects"],
+        "timeout": 30000,
+        "environment": {
+          "REA_JADX_HEAP_MIB": "4096",
+          "REA_JADX_ACTIVE_PROCESSOR_COUNT": "2"
+        }
       }
     }
   }

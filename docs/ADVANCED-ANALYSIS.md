@@ -101,7 +101,7 @@ Network只捕获启用之后事件，默认遮蔽Authorization/Cookie/API-Key/To
 {"tool":"managed","arguments":{"action":"extract","path":"/absolute/path/assemblies.blob"}}
 ```
 
-支持store v1、v2（32/64位hash）、v3（9/13字节索引）；raw store及唯一_assembly_store符号或唯一payload节的ELF32/64封装。payload为未发行增量，见CURRENT-INCREMENT.md。XALZ按LZ4 raw block、XAZS按Zstd解压。未知版本/flags、越界、非相同重叠和路径异常拒绝，不执行ELF，不扫描magic猜载荷。
+支持store v1、v2（32/64位hash）、v3（9/13字节索引）；raw store及唯一_assembly_store符号或唯一payload节的ELF32/64封装。payload能力和限制见CURRENT-INCREMENT.md。XALZ按LZ4 raw block、XAZS按Zstd解压。未知版本/flags、越界、非相同重叠和路径异常拒绝，不执行ELF，不扫描magic猜载荷。
 
 输出assemblies/assembly-NNNN.dll或.bin，记录原name/index/offset/codec/哈希。MZ只是PE候选，提取后用framework.ilspy作严格PE/CLI分析；native AOT不能按IL反编译。预算：输入512MiB、4096 descriptor、ELF累计200000符号、单程序集128MiB、累计解压512MiB（先预留再解压）。相同区间哈希复用，不能用重复引用放大inspect工作量。
 
