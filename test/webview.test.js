@@ -47,3 +47,18 @@ test('WebView身份读取被取消不关闭会话，跨PID代次快照拒绝复�
     await assert.rejects(manager.use(opened.sessionId),/重启/);assert.equal(manager.entries.size,0);assert.equal(f.forward,false);
   }finally{await manager.close();await f.close();}
 });
+test('CDP保留重定向链和失败终态，脚本超预算标partial',async()=>{
+  const f=await cdpFixture({scriptCount:205,networkEvents:[
+    {method:'Network.requestWillBeSent',params:{requestId:'redirect',request:{url:'https://owned.invalid/start',method:'GET',headers:{}}}},
+    {method:'Network.requestWillBeSent',params:{requestId:'redirect',redirectResponse:{url:'https://owned.invalid/start',status:302},request:{url:'https://owned.invalid/final',method:'GET',headers:{}}}},
+    {method:'Network.responseReceived',params:{requestId:'redirect',response:{status:500,mimeType:'text/plain',headers:{}}}},
+    {method:'Network.loadingFailed',params:{requestId:'redirect',errorText:'net::ERR_ABORTED',canceled:true}},
+  ]}),manager=new WebViews(f.adb);
+  try{
+    const opened=await manager.open({serial:'owned-device',packageName:'dev.owned.app',pid:42});
+    const scripts=await manager.use(opened.sessionId);assert.equal(scripts.cdp.scripts.size,200);assert.equal(scripts.cdp.partial,true);
+    const request=scripts.cdp.requests.get('redirect');assert.equal(request.url,'https://owned.invalid/final');assert.deepEqual(request.redirects,[{url:'https://owned.invalid/start',status:302}]);assert.equal(request.response.status,500);assert.deepEqual(request.failure,{errorText:'net::ERR_ABORTED',canceled:true});
+    f.broadcast({method:'Owned.oversized',params:{payload:'x'.repeat(4*1024*1024+1)}});await new Promise(r=>setTimeout(r,50));
+    assert.equal(scripts.cdp.closed,true);assert.equal(scripts.cdp.partial,true);await manager.close(opened.sessionId);assert.equal(f.forward,false);
+  }finally{await manager.close();await f.close();}
+});

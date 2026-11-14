@@ -1,6 +1,14 @@
 # 变更记录
 
-## 0.5.0 — 2026-11-14（首发候选，尚未发布）
+## 0.5.1 — 2026-11-14（候选，尚未发布）
+
+- evidence索引source map generated→original坐标及map SHA，标明构建匹配未知；inventory容器树映射为container/member/content节点，区分报告结构和SHA同一性。
+- 新增resources.view-events，有界扫描APK解码资源/解码目录中的XML `android:onClick`声明，输出待核验签名候选并拒绝DTD/entity。
+- Kotlin2.0.21 Compose plugin2.0.21/runtime1.8.0编译真实DEX，验证Composer、mutableStateOf、remember、MutableState读写和lambda方法内调用候选；不声称完整Compose状态/事件恢复。
+- 增加CDP重定向/失败/预算和ClassLoader拒绝/释放边界测试；39项测试、语法/包门、Compose/分包/静态smoke与隔离tarball实装通过。
+- 保留原`v0.5.0`候选tag；本版本候选仅在本地提交/tag，未推送/发布。
+
+## 0.5.0 — 2026-11-14（历史候选，已本地打tag）
 
 - 新增packages/managed/webview/evidence四组，当前20个入口。
 - 所选APK集合校验包名/长版本/全部signer/依赖、聚合DEX与分模块资源；APKS显式设备spec选择、AAB只读Manifest及无原签名分析派生；外部bundletool前置容器预算。
@@ -12,6 +20,8 @@
 - 真正自建AAB/APKS、Kotlin编译DEX、store结构容器→SHA→ILSpy、自有POCO DCL/JS桥接/CDP样本验证。原生TCP失败单列，不把拦截响应冒充外网验收。
 - 新依赖/调用/维护文档、OpenCode模式提示词与本地模拟请求验证；专有引擎不打包，不扩大未验收框架声明。
 - 修复npm目录白名单混入Python字节码缓存，明确helper源码扩展名，新增check:pack并接入CI。
+
+> tag `v0.5.0`创建后继续出现的未发布工作树增量：source map与容器树证据节点、View XML onClick候选、真实Compose编译签名smoke、CDP/ClassLoader失败边界回归。这些改动需在下一发行版本单独记录，不属于当前v0.5.0 tag。
 
 ## 0.4.0 — 2026-11-14（本地，尚未发布）
 

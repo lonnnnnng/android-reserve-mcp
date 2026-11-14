@@ -4,6 +4,7 @@ import java.util.*;
 import com.google.gson.Gson;
 import jadx.api.*;
 import jadx.core.dex.nodes.*;
+import jadx.core.dex.instructions.BaseInvokeNode;
 import jadx.api.plugins.input.data.annotations.*;
 import jadx.api.plugins.input.data.attributes.types.AnnotationsAttr;
 import kotlin.metadata.*;
@@ -30,7 +31,7 @@ public class MetadataInspect {
     row.put("returnClassifier", String.valueOf(f.getReturnType().getClassifier())); return row;
   }
   public static void main(String[] args) throws Exception {
-    List<Object> classes = new ArrayList<>(); boolean partial = false; int examined = 0, metadataBytes = 0;
+    List<Object> classes = new ArrayList<>(); boolean partial = false; int examined = 0, metadataBytes = 0, composeInstructions = 0;
     JadxArgs options = new JadxArgs(); options.setInputFile(new File(args[0])); options.setSkipResources(true); options.setThreadsCount(2);
     options.setOutDir(new File(args[1]).getParentFile());
     try (JadxDecompiler jadx = new JadxDecompiler(options)) {
@@ -48,17 +49,38 @@ public class MetadataInspect {
           annotations.put(name,values);
         }
         Set<String> methods = new LinkedHashSet<>();
-        List<String> compose = new ArrayList<>(), bridges = new ArrayList<>(); boolean stateMachine = false;
+        List<String> compose = new ArrayList<>(), bridges = new ArrayList<>(); List<Object> composeSignals = new ArrayList<>(); boolean stateMachine = false;
         for (MethodNode method : cls.getMethods()) {
           String signature = method.getMethodInfo().getShortId(); methods.add(signature);
-          if (signature.contains("Landroidx/compose/runtime/Composer;")) compose.add(signature);
+          if (signature.contains("Landroidx/compose/runtime/Composer;")) {
+            compose.add(signature);
+            Map<String,Integer> signals = new LinkedHashMap<>();
+            try {
+              int instructionCount=method.getInsnsCount();
+              if(instructionCount<0||composeInstructions+instructionCount>50000){partial=true;signals.put("instruction-budget-exceeded",1);}
+              else {
+                composeInstructions+=instructionCount;method.load();
+                for(var insn:method.getInstructions())if(insn instanceof BaseInvokeNode invoke){
+                  var target=invoke.getCallMth();String owner=target.getDeclClass().getRawName(),name=target.getName(),signal=null;
+                  if(owner.equals("androidx.compose.runtime.SnapshotStateKt")&&name.startsWith("mutableStateOf"))signal="mutableState-create-candidate";
+                  else if(owner.equals("androidx.compose.runtime.MutableState")&&name.equals("getValue"))signal="state-read-candidate";
+                  else if(owner.equals("androidx.compose.runtime.MutableState")&&name.equals("setValue"))signal="state-write-candidate";
+                  else if(owner.equals("androidx.compose.runtime.Composer")&&name.equals("rememberedValue"))signal="remember-read-candidate";
+                  else if(owner.equals("androidx.compose.runtime.Composer")&&name.equals("updateRememberedValue"))signal="remember-write-candidate";
+                  else if(owner.equals("kotlin.jvm.functions.Function0")&&name.equals("invoke"))signal="lambda-invocation-candidate";
+                  if(signal!=null)signals.merge(signal,1,Integer::sum);
+                }
+              }
+            } catch(Exception error) { partial=true; signals.put("instruction-read-failed",1); }
+            composeSignals.add(Map.of("jvmSignature",signature,"signals",signals,"evidence","compiled-invoke-reference-candidate"));
+          }
           if (method.getName().equals("invokeSuspend")) stateMachine = true;
           // long: 只按DEX中的真实JavascriptInterface注解列出桥接声明，方法名相似不能证明它向JS开放。
           if (method.getAnnotation("android.webkit.JavascriptInterface") != null || method.getAnnotation("Landroid/webkit/JavascriptInterface;") != null) bridges.add(signature);
         }
         if (annotations.isEmpty() && compose.isEmpty() && !stateMachine && bridges.isEmpty()) continue;
         Map<String,Object> row = new LinkedHashMap<>(); row.put("className",cls.getRawName()); row.put("annotations",annotations);
-        row.put("dexSignatures",methods); row.put("composeCandidates",compose); row.put("coroutineStateMachineCandidate",stateMachine);
+        row.put("dexSignatures",methods); row.put("composeCandidates",compose); row.put("composeSignals",composeSignals); row.put("coroutineStateMachineCandidate",stateMachine);
         row.put("javascriptInterfaces",bridges);
         row.put("superClass",String.valueOf(cls.getSuperClass()));
         for (var entry : annotations.entrySet()) if (entry.getKey().contains("Metadata") && !entry.getKey().contains("DebugMetadata")) {
@@ -82,7 +104,7 @@ public class MetadataInspect {
         classes.add(row);
       }
     }
-    Map<String,Object> report = new LinkedHashMap<>(); report.put("classes",classes); report.put("examined",examined); report.put("partial",partial);
+    Map<String,Object> report = new LinkedHashMap<>(); report.put("classes",classes); report.put("examined",examined); report.put("composeInstructions",composeInstructions); report.put("partial",partial);
     report.put("limitation","metadata声明和编译结构候选，不恢复完整Compose UI/异步调用链/KMP commonMain");
     Files.writeString(Path.of(args[1]),new Gson().toJson(report));
   }

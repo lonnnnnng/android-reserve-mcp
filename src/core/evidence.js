@@ -40,22 +40,76 @@ export function indexEvidence(jobId, sources) {
       const method=add('java-method',[artifact||jobId,value.className,f.jvmSignature],{className:value.className,signature:f.jvmSignature,suspend:f.suspend,inline:f.inline});
       edge(artifact||run,method,f.exactDexMatch?'metadata-signature-matches-dex':'metadata-declares',citation,f.exactDexMatch?'exact-signature-in-same-artifact':'metadata-declaration');
     }
+    if(value.className&&Array.isArray(value.composeSignals))for(const item of value.composeSignals.slice(0,1000))if(typeof item.jvmSignature==='string'&&item.signals&&typeof item.signals==='object'){
+      const method=add('compose-method',[artifact||jobId,value.className,item.jvmSignature],{className:value.className,signature:item.jvmSignature,evidence:'composer-parameter-in-compiled-dex'});
+      edge(artifact||run,method,'declares-compose-method-candidate',citation,'composer-signature-candidate');
+      for(const [signal,count] of Object.entries(item.signals).slice(0,32))if(Number.isSafeInteger(count)&&count>0){
+        const candidate=add('compose-signal-candidate',[method,signal],{className:value.className,signature:item.jvmSignature,signal,count});
+        edge(method,candidate,'has-compiled-compose-signal',citation,'compiled-invoke-reference-candidate');
+      }
+    }
     if(artifact&&Array.isArray(value.functions)&&!value.className){
       const location = row => ({ line:row.line,column:row.column,end:row.end });
       const functions=new Map();for(const f of value.functions.slice(0,12000))if(Number.isInteger(f.start)){const node=add('js-function',[artifact,f.start,f.name],{name:f.name,start:f.start,location:location(f)});functions.set(f.start,node);edge(artifact,node,'contains-function',citation,'static-parser');}
       for(const c of (value.calls||[]).slice(0,12000))if(functions.has(c.bindingFunctionStart)){const call=add('js-callsite',[artifact,c.start,c.callee],{callee:c.callee,start:c.start,location:location(c)});edge(call,functions.get(c.bindingFunctionStart),'lexical-binding-reference',citation,'static-lexical-resolution');}
     }
     if(Array.isArray(value.frameworks))for(const f of value.frameworks.slice(0,100))if(f.name){const candidate=add('framework-candidate',[artifact||jobId,f.name],{name:f.name});edge(artifact||run,candidate,'candidate-framework',citation,'candidate-only');}
-    for(const [field,child] of Object.entries(value))if(!['content','raw_result','annotations'].includes(field))walk(child,pointer+'/'+field.replaceAll('~','~0').replaceAll('/','~1'),source,scope,artifact,depth+1);
+    for(const [field,child] of Object.entries(value))if(!['content','raw_result','annotations'].includes(field)&&!(value.kind==='source-map-position'&&field==='map'))walk(child,pointer+'/'+field.replaceAll('~','~0').replaceAll('/','~1'),source,scope,artifact,depth+1);
   }
   for(const source of sources){const hash=sha(source.artifactHash)?source.artifactHash.toLowerCase():null;const anchor=hash?add('artifact',hash,{sha256:hash}):null;walk(source.value,'',source.file,{},anchor);}
+  for(const source of sources){
+    const value=source.value,citation=(jsonPointer)=>({jobId,file:source.file,jsonPointer});
+    if(value?.kind==='source-map-position'&&sha(value.input?.sha256)&&value.generated&&value.original?.source){
+      const generatedArtifact=add('artifact',value.input.sha256.toLowerCase(),{sha256:value.input.sha256.toLowerCase(),bytes:value.input.bytes});
+      const mapHash=sha(value.map?.sha256)?value.map.sha256.toLowerCase():null;
+      const map=mapHash?add('source-map',mapHash,{sha256:mapHash,path:typeof value.map.path==='string'?value.map.path.slice(0,4096):undefined,association:'caller-supplied-build-match-unverified'}):null;
+      const generated=add('source-location',[generatedArtifact,'generated',value.generated.line,value.generated.column],{artifactHash:value.input.sha256.toLowerCase(),coordinate:'generated',line:value.generated.line,column:value.generated.column});
+      const original=add('source-location',[generatedArtifact,'original',value.original.source,value.original.line,value.original.column],{artifactHash:value.input.sha256.toLowerCase(),coordinate:'source-map-original',source:value.original.source,line:value.original.line,column:value.original.column,name:value.original.name||undefined});
+      edge(generatedArtifact,generated,'has-generated-position',citation('/generated'),'report-coordinate');
+      edge(map,generated,'maps-generated-position',citation('/map'),'source-map-report');
+      edge(generated,original,'maps-to-original-position',citation('/original'),'caller-supplied-source-map');
+    }
+    if(!Array.isArray(value?.containers)||!Array.isArray(value?.entries))continue;
+    const rootEntry=value.entries.find(row=>Array.isArray(row.chain)&&row.chain.length===0&&sha(row.sha256));
+    const rootHash=rootEntry?.sha256?.toLowerCase();
+    const scope=rootHash||jobId,containers=new Map();
+    value.containers.forEach((row,index)=>{
+      if(!Array.isArray(row.chain)||row.chain.length>4)return;
+      const id=add('artifact-container',[scope,row.chain],{chain:row.chain,containerKind:row.kind,entries:row.entries,coverage:row.coverage});
+      containers.set(JSON.stringify(row.chain),id);
+      const parent=containers.get(JSON.stringify(row.chain.slice(0,-1)));
+      if(parent)edge(parent,id,'contains-nested-container',citation(`/containers/${index}`),'reported-container-layout');
+      if(row.chain.length===0&&rootHash){const root=add('artifact',rootHash,{sha256:rootHash,bytes:rootEntry.bytes});edge(root,id,'inspected-as-container',citation(`/containers/${index}`),'reported-container-layout');}
+    });
+    value.entries.forEach((row,index)=>{
+      if(!Array.isArray(row.chain)||row.chain.length>4)return;
+      const member=add('container-member',[scope,row.chain],{chain:row.chain,name:row.chain.at(-1)||row.name,entryKind:row.kind,bytes:row.bytes,status:row.status,abi:row.abi});
+      const parent=containers.get(JSON.stringify(row.chain.slice(0,-1)));
+      if(parent)edge(parent,member,'contains-member',citation(`/entries/${index}`),'reported-container-layout');
+      if(sha(row.sha256)){
+        const child=add('artifact',row.sha256.toLowerCase(),{sha256:row.sha256.toLowerCase(),bytes:row.bytes});
+        edge(member,child,'has-content',citation(`/entries/${index}/sha256`),'content-hash');
+      }
+      const nested=containers.get(JSON.stringify(row.chain));
+      if(nested&&nested!==member)edge(member,nested,'contains-container-content',citation(`/entries/${index}`),'reported-container-layout');
+    });
+  }
+  for(const source of sources){
+    const value=source.value;
+    if(value?.kind!=='android-view-onclick-declarations'||!Array.isArray(value.events))continue;
+    value.events.slice(0,10000).forEach((row,index)=>{
+      const citation={jobId,file:source.file,jsonPointer:`/events/${index}`};
+      const node=add('view-event-candidate',[jobId,row.layout,row.viewId,row.handler,row.candidateClass],{layout:row.layout,viewClass:row.viewClass,viewId:row.viewId,handler:row.handler,candidateClass:row.candidateClass,candidateSignature:row.candidateSignature,resolution:row.resolution});
+      edge(run,node,'declares-view-handler',citation,'xml-declaration-candidate');
+    });
+  }
   return {schema:1,jobId,nodes:[...nodes.values()],edges:[...edges.values()],partial,limitation:'跨任务仅按内容哈希合并产物；运行关联按会话/脚本/trace及报告调用ID，不按路径、时间或PID猜测'};
 }
 
 export async function evidenceForJob(job, result) {
   const sources=[{file:'result.json',value:result}]; let bytes=0; const skipped=[];
   // long: 只读固定报告名，拒绝外部解析器生成的越界符号链接；目标文本不能指定新的宿主文件。
-  for(const name of ['script.json','inventory.json','kotlin.json','managed.json','packages.json']){
+  for(const name of ['script.json','inventory.json','kotlin.json','managed.json','packages.json','layout-events.json']){
     const file=await fs.realpath(path.join(job.dir,name)).catch(()=>null);if(!file)continue;if(!within(job.dir,file)){skipped.push(name+':outside-job');continue;}
     const stat=await fs.stat(file);if(!stat.isFile()||stat.size>16*1024*1024||bytes+stat.size>32*1024*1024){skipped.push(name+':budget');continue;}
     bytes+=stat.size;try{sources.push({file:name,value:JSON.parse(await fs.readFile(file,'utf8')),artifactHash:result.input?.sha256||result.inputSha256});}catch{skipped.push(name+':invalid-json');}

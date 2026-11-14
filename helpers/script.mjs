@@ -19,7 +19,8 @@ const identity = { path: input, sha256: createHash('sha256').update(bytes).diges
 const location = node => ({ start: node.start, end: node.end, line: node.loc?.start.line, column: node.loc?.start.column });
 let report;
 if (action === 'map') {
-  const map = JSON.parse((await read(options.mapPath)).toString('utf8'));
+  const mapBytes = await read(options.mapPath), mapDigest = createHash('sha256').update(mapBytes).digest('hex');
+  const map = JSON.parse(mapBytes.toString('utf8'));
   let sections = 0;
   function validate(value, depth = 0) {
     if (depth > 8 || value?.version !== 3) throw new Error('无效source map版本或嵌套超限');
@@ -36,7 +37,7 @@ if (action === 'map') {
   validate(map);
   // long: sources/sourceRoot只作为结果标签，不把map内容当成文件读取或网络访问授权。
   const position = originalPositionFor(new AnyMap(map), { line: options.line, column: options.column });
-  report = { kind: 'source-map-position', input: identity, mapPath: options.mapPath, generated: { line: options.line, column: options.column }, original: position, status: position.source === null ? 'unmapped' : 'mapped', limitation: '映射关系来自调用者提供的map，未证明它与当前bundle同一构建' };
+  report = { kind: 'source-map-position', input: identity, map: { path: options.mapPath, sha256: mapDigest, bytes: mapBytes.length }, generated: { line: options.line, column: options.column }, original: position, status: position.source === null ? 'unmapped' : 'mapped', limitation: '映射关系来自调用者提供的map，未证明它与当前bundle同一构建' };
 } else {
   if (bytes.includes(0)) throw new Error('目标包含二进制数据；请先识别Hermes/Wasm等格式');
   const source = bytes.toString('utf8');

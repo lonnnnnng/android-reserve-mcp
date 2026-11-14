@@ -22,7 +22,7 @@ test('真实 stdio 握手、分组工具、APK/Manifest任务、分页及错误�
   try {
     await client.connect(transport);
     const list = await client.listTools(); assert.equal(list.tools.length, 20);
-    assert.equal(client.getServerVersion().version, '0.5.0');
+    assert.equal(client.getServerVersion().version, '0.5.1');
     const fridaSchema = list.tools.find(t => t.name === 'frida').inputSchema;
     for (const action of ['java-methods', 'java-loaders', 'trace-java', 'trace-jni', 'unload']) assert.ok(fridaSchema.properties.action.enum.includes(action));
     assert.ok(fridaSchema.properties.loaderSelector);

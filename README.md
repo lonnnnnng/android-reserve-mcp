@@ -2,7 +2,7 @@
 
 聚焦Android产物、DEX、JS、SO、资源和运行观测的MCP服务。使用本地CLI和静态解析器，复杂查询按需启动REA后端；对模型提供20个分组入口，避免加载整个通用逆向工具集。
 
-当前首发候选版本 `0.5.0`，npm/GitHub尚未发布。发布前从源码启动；首发条件与完整待办见[首发待办](docs/FIRST-RELEASE-TODO.md)，当前交付与能力边界见[实施进展](docs/PROGRESS.md)。
+当前首发候选版本 `0.5.1`，npm/GitHub尚未发布。`v0.5.0`为此前候选tag，不含后续补强。发布前从源码启动；首发条件与完整待办见[首发待办](docs/FIRST-RELEASE-TODO.md)，当前交付与能力边界见[实施进展](docs/PROGRESS.md)。
 
 OpenCode 连接名和专用模式名均为 `android-reserve`，协议服务名与 npm 包名为 `android-reserve-mcp`。OpenCode 工具前缀为 `android-reserve_`。各类应用的覆盖范围见 [能力与限制](docs/CAPABILITIES.md)。
 
@@ -54,7 +54,7 @@ node src/cli.js --help
 | `webview` | 显式设备/包/PID的已开放WebView调试会话，DOM/源码/网络与正文采集 |
 | `evidence` | 跨任务内容哈希、签名、词法绑定、受限运行调用ID的持久证据索引 |
 | `search` | 导出源码的文本检索，给出文件和行号 |
-| `resources` | 解码资源并按语言和偏移读取字符串 |
+| `resources` | 解码资源并按语言分页读取字符串；`view-events`列出XML `android:onClick`声明候选，不代表DEX/运行确认 |
 | `native` | ELF/JNI；独立target的函数清单、伪代码、引用/callers/callees、provider状态；Go/Rust元数据接口 |
 | `artifact` | 文件/目录/嵌套归档索引、magic/ABI/框架候选、按chain安全提取 |
 | `script` | JS/TS/JSX/Flow静态索引、格式化及显式source map位置映射 |

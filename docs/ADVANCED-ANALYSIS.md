@@ -1,4 +1,4 @@
-# 分包、Kotlin、WebView与持久证据（0.5.0）
+# 分包、Kotlin、WebView与持久证据（0.5.x）
 
 核验日期：2026-11-14。本文所有示例是MCP工具参数，不是shell命令；长任务须查询jobs并读取result.json，不能只看任务已创建。共20个分组入口，不会把REA全部工具加载给模型。
 
@@ -39,6 +39,19 @@ query是原始类名前缀，建议限定包名。读取原始DEX的kotlin.Metad
 这不是完整Compose UI树/状态/事件分析，metadata声明也不等于异步运行调用链。KMP的Android目标可复用；APK不包含其他target或完整commonMain。readLenient不能承诺所有未来metadata版本都兼容，未知/畸形结果会带partial/metadataStatus。
 
 依赖：完整JDK17+、固定SHA的headless JADX0.7.1、kotlin-metadata-jvm2.3.21与kotlin-stdlib2.3.21。该action本地运行，不要求REA进程或设备。预算：输入512MiB、JVM2GiB、180秒、5000类；扫描截断保留partial。
+
+`composeCandidates`和`composeSignals`已由Kotlin2.0.21 Compose compiler plugin+runtime1.8.0编译的自有DEX smoke验证Composer签名及mutableStateOf、remember、MutableState读写、lambda invoke等有限编译调用候选；后几项仅是方法中的invoke引用，不证明用户触发路径或运行时状态转移。证据图可查询`compose-method`和`compose-signal-candidate`。smoke需要本机Gradle缓存的编译器/plugin/runtime AAR；这些是开发样本依赖，不是目标分析运行依赖。
+
+### View `android:onClick` 声明候选
+
+```json
+{"tool":"resources","arguments":{"action":"view-events","path":"/absolute/path/decoded-apk","className":"com.example.MainActivity"}}
+{"tool":"resources","arguments":{"action":"view-events","path":"/absolute/path/app.apk"}}
+```
+
+目录可指apktool解码工程或直接`res/`；APK输入会在任务目录用apktool解资源。输出layout、view类型/id、XML `tools:context` 与调用方提供的className，并形成 `Class#handler(android.view.View)`候选。它只从XML声明推断，不检查DEX中方法存在/可见性，也不证明系统实际绑定该Activity或发生点击。Compose、listener/lambda、数据绑定不由此扫描。结果可在evidence图作为`view-event-candidate`查询，强度仍是XML声明候选。
+
+输入XML限制单个2MiB/累计32MiB/最多5000文件与10000条声明；拒绝DOCTYPE/ENTITY避免XML外部实体。失败/过预算保留warning/partial。依赖Python标准库；APK路径需apktool和Java，解码工程不需REA。
 
 ## 自定义ClassLoader
 
@@ -101,7 +114,7 @@ Network只捕获启用之后事件，默认遮蔽Authorization/Cookie/API-Key/To
 {"tool":"evidence","arguments":{"action":"query","graphJobId":"<merge任务UUID>","kind":"java-method","query":"flow","limit":50}}
 ```
 
-可查询artifact、java-method、js-function、js-callsite、runtime-event、runtime-call、jni-registration、webview-capture、framework-candidate。关联强度保存在edge.strength：内容相同用SHA256；Kotlin匹配完整JVM签名；JS只做静态词法直接函数绑定；运行调用只按device/session/script/trace和报告调用ID。CDP正文经SHA关联到静态脚本，采集会话身份不等于跨线程业务调用链。
+可查询artifact、artifact-container、container-member、source-map、source-location、view-event-candidate、compose-method、compose-signal-candidate、java-method、js-function、js-callsite、runtime-event、runtime-call、jni-registration、webview-capture、framework-candidate。关联强度保存在edge.strength：内容相同用SHA256；容器树是inventory报告结构；source map边来自显式调用方文件且不证明与bundle同构建；View和Compose编译调用仅是候选；Kotlin匹配完整JVM签名；JS只做静态词法直接函数绑定；运行调用只按device/session/script/trace和报告调用ID。CDP正文经SHA关联到静态脚本，采集会话身份不等于跨线程业务调用链。
 
 框架候选依然是candidate-only。不会按相同路径、时间接近、相同PID或RVA猜跨任务业务关联，也不会自动遍历引擎全部输出生成全程序图。图是已知报告的有界索引，原始证据仍须分页读取。最多20000节点/40000边；merge最多50任务、累计读取64MiB，query返回最多100节点及200关联边。
 

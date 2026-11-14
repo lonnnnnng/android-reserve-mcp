@@ -1,8 +1,17 @@
 # 验证记录
 
-日期：2026-11-14；当前版本0.5.0；宿主macOS arm64。环境版本见ENVIRONMENT.md。
+日期：2026-11-14；候选版本0.5.1，v0.5.0记录见下；宿主macOS arm64。环境版本见ENVIRONMENT.md。
 
-## 0.5.0当前验证
+## v0.5.1候选验证（未打tag）
+
+- `npm run check`、39组自动测试、`check:pack`与`smoke:release`通过；实际0.5.1 tarball安装后stdio列20工具、doctor成功。
+- `npm run smoke:kotlin`使用真实Kotlin2.0.21 Compose plugin与runtime编译Compose函数到DEX；断言Composer签名、mutableStateOf、remember、MutableState读写和lambda invoke候选，并从持久evidence查询signal。仅证明编译调用引用，不代表运行态事件/重组。
+- `npm run smoke:static`、`smoke:packages`与`smoke:store`通过，含真实AAB/APKS分包和托管结构样本。source map、View/XML报告关系、Compose编译候选不会越过各自证据强度。
+- CDP重定向/失败/脚本和消息预算、ClassLoader唯一性拒绝测试通过。生产依赖审计0漏洞，actionlint通过；Linux远端CI尚未运行。
+- 当前源码/version/lock为0.5.1；最终tarball为`android-reserve-mcp-0.5.1.tgz`，51个源码/文档文件，SHA256 `095f0f8a34ea35f225e48b78c38658151ccffa79e62177c4e81f687925e0b6f4`，不含样本/引擎/签名材料。
+- 本地中文候选提交/tag已建立；旧`v0.5.0`tag未移动。GitHub/npm发布待确认仓库可见性和npm凭据，远端CI尚未运行。
+
+## v0.5.0首发tag历史验证
 
 - 全部JS/Python语法检查、34组自动测试和真实stdio0.5.0握手通过；tools/list为20组。新增分包一致性/前置容器预算、证据scope/词法绑定/partial、loader唯一性、真实本地HTTP+WebSocket协议、身份取消/代次/清理失败重试；测试不接手机。
 - `npm run smoke:release`通过：将生成的`android-reserve-mcp@0.5.0` tarball安装到隔离临时目录，从打包CLI完成stdio握手，确认20工具和doctor成功；测试后临时目录清理。`npm run check:pack`对50个源码/文档文件通过。

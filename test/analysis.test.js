@@ -44,6 +44,10 @@ with zipfile.ZipFile(sys.argv[1],'w') as z:
     assert.deepEqual(hbc.chain, ['splits/base.apk', 'assets/index.android.bundle']);
     assert.equal(hbc.bytecodeVersion, 96);
     assert.ok(report.frameworks.some(f => f.name === 'react-native'));
+    const graph=JSON.parse(await fs.readFile(path.join(inspected.dir,'evidence.json')));
+    assert.ok(graph.nodes.some(n=>n.kind==='artifact-container'&&n.containerKind==='apks'));
+    assert.ok(graph.nodes.some(n=>n.kind==='artifact-container'&&n.containerKind==='apk'));
+    assert.ok(graph.edges.some(e=>e.relation==='contains-nested-container'&&e.strength==='reported-container-layout'));
     const extracted = await wait(context, await artifact(context, { action: 'extract', path: path.join(root, 'fixture.apks'), chain: hbc.chain }));
     assert.equal(extracted.state, 'succeeded');
     const bytes = await fs.readFile(path.join(extracted.dir, 'extracted-index.android.bundle'));
@@ -76,6 +80,9 @@ test('JS索引真实词法关系，格式化不执行目标；显式indexed map�
     assert.equal(mapped.state, 'succeeded');
     const mapping = JSON.parse(await fs.readFile(path.join(mapped.dir, 'script.json')));
     assert.equal(mapping.original.source, 'original.ts');
+    const mapEvidence=JSON.parse(await fs.readFile(path.join(mapped.dir,'evidence.json')));
+    assert.ok(mapEvidence.nodes.some(n=>n.kind==='source-map'&&n.association==='caller-supplied-build-match-unverified'));
+    assert.ok(mapEvidence.edges.some(e=>e.relation==='maps-to-original-position'));
     await fs.writeFile(mapPath, JSON.stringify({ version: 3, sections: [{ offset: { line: 0, column: 0 }, url: 'http://127.0.0.1/secret' }] }));
     const rejected = await wait(context, await script(context, { action: 'map', path: source, mapPath, line: 1, column: 0 }));
     assert.equal(rejected.state, 'failed');

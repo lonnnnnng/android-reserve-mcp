@@ -79,10 +79,12 @@ Java bundle编译在src/core/java-agent.js，方法/Native同调用观测在help
 
 新增验收`npm run smoke:jni -- <serial>`会编译、签名并覆盖安装同一自有App、启停该App，只读其PID日志。测试必须过滤当前script_id，原异常保持必须在JNI observer仍加载时断言；不要用旧agent事件或卸载后的正常结果代替。原Java smoke与JNI smoke共享自有签名和输出根目录，必须顺序运行，不能并发重建/覆盖安装；fixture class/dex采用每次新建目录避免残留。
 
-## 0.5.0新增模块维护
+## 0.5.x新增模块维护
 
 分包修改src/core/packages.js与helpers/package-set.py，先检查外部工具执行前预算，再核对包名/长版本/全部证书/依赖。Kotlin修改helpers/MetadataInspect.java和src/core/kotlin.js，保持真实DEX签名/注解与候选强度。store修改helpers/assembly-store.py和src/core/managed.js，未知版本拒绝、符号总预算、预留解压预算必须一起维护。
 
 WebView修改src/core/webview.js及test/webview.test.js；必须覆盖身份读取取消、PID代次、CDP关闭、清理失败重试和自己的精确forward，不能引入remove-all。证据索引修改src/core/evidence.js及生产报告模块；变更字段时更新位置/调用绑定/partial传播测试，不把候选升级为运行事实。
 
 新环境、安装、调用、预算见ADVANCED-ANALYSIS.md与ENGINE-SETUP.md。新增smoke:packages/kotlin/store/hybrid；前三项静态，hybrid需要显式授权设备并只安装/启停自有fixture。与java/jni/device smoke顺序运行，先备份配置再同步examples/agents。
+
+tag `v0.5.0`之后新增了source map/container证据、View `view-events`、Compose compile fixture及CDP/ClassLoader边界测试；这些补强属于0.5.1候选工作树，须重跑发布门禁；不可移动或覆写v0.5.0 tag，禁止把原tag移到不同内容。

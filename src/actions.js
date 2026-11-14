@@ -21,6 +21,7 @@ export { managed } from './core/managed.js';
 export { evidence } from './core/evidence.js';
 
 const helper = fileURLToPath(new URL('../helpers/static.py', import.meta.url));
+const viewEventsHelper = fileURLToPath(new URL('../helpers/view-events.py', import.meta.url));
 const skillNames = ['apk-reverse', 'mobile-reverse', 'ida-reverse', 'protocol-reverse'];
 const text = value => JSON.stringify(value, null, 2);
 const required = (value, name) => { if (value === undefined || value === '') throw new Error(`必须提供 ${name}`); return value; };
@@ -141,6 +142,20 @@ export async function search(context, args) {
 }
 
 export async function resources(context, args) {
+  if(args.action==='view-events'){
+    const input=await context.paths.input(args.path,{directory:null});
+    return context.jobs.start('View onClick声明扫描',async(signal,dir)=>{
+      let decoded=input;
+      if((await fs.stat(input)).isFile()){
+        decoded=path.join(dir,'decoded');
+        const result=await run(await tool('apktool'),['d','--no-src',input,'-o',decoded],{signal,timeoutMs:300000});
+        await fs.writeFile(path.join(dir,'apktool.log'),result.stdout+'\n'+result.stderr);checked(result,'布局资源解码');
+      }
+      const report=JSON.parse(checked(await run(await tool('python3'),[viewEventsHelper,decoded,args.className||''],{signal,maxBytes:512*1024}),'View布局候选扫描').stdout);
+      await fs.writeFile(path.join(dir,'layout-events.json'),JSON.stringify(report,null,2));
+      return {...report,report:'layout-events.json'};
+    });
+  }
   const input = await context.paths.input(args.path);
   const parameters = { path: input, include_strings: true, string_offset: args.offset || 0, string_limit: args.limit || 50, max_total_strings: 500, string_tables_only: true, decode_timeout_ms: 300000 };
   if (args.locale) parameters.locale = args.locale;
