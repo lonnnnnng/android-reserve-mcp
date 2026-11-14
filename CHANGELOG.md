@@ -1,6 +1,6 @@
 # 变更记录
 
-## 0.5.2 — 2026-11-14（本地发行候选，尚未公开发布）
+## 0.5.2 — 2026-11-14（GitHub Release 已发布；npm 尚未发布）
 
 - `trace-native`新增有界等待尚未加载Native模块的参数；自有ARM64延迟库此前在真机通过等待、hook安装和函数调用验收。本次发行前重跑受REA Gadget能力条件阻塞，未能再次进入hook阶段。
 - 固定GitHub公开样本的上游commit与构建产物哈希，记录Compose、WebView、Flutter MethodChannel、RN/Hermes和Views/Compose的实际验收范围与失败边界。

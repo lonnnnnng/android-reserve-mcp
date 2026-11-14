@@ -1,6 +1,6 @@
 # 动态JNI注册与隐藏函数观测
 
-适用0.5.0、0.5.1及0.5.2本地候选，核验日期2026-11-14。新增能力保留在`frida`分组中，服务当前20个工具入口，JNI动作仍在frida内；不需要安装新的外部引擎。依赖沿用Java bridge、编译器、REA设备binding和匹配server，见[完整环境](ENVIRONMENT.md)。
+适用0.5.0、0.5.1及0.5.2，核验日期2026-11-14。新增能力保留在`frida`分组中，服务当前20个工具入口，JNI动作仍在frida内；不需要安装新的外部引擎。依赖沿用Java bridge、编译器、REA设备binding和匹配server，见[完整环境](ENVIRONMENT.md)。
 
 ## 1. 能得到什么
 

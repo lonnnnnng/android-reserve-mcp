@@ -1,6 +1,6 @@
 # 当前能力与适用范围
 
-适用范围：本地 `0.5.2` 发行候选，基于 `v0.5.1` tag 补充；核对日期2026-11-14。提交/tag与验证层级见[PROGRESS.md](PROGRESS.md)和[VALIDATION.md](VALIDATION.md)，调用见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)、[ENGINES.md](ENGINES.md)。
+适用版本`0.5.2`，核对日期2026-11-14。GitHub Release已发布，npm尚未发布；实现与验证层级见[PROGRESS.md](PROGRESS.md)和[VALIDATION.md](VALIDATION.md)，调用见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)、[ENGINES.md](ENGINES.md)。
 
 项目/npm/协议服务名均为android-reserve-mcp；OpenCode连接/主模式为android-reserve，工具前缀android-reserve_。共有20个分组入口：doctor、apk、decode、dex、packages、managed、evidence、webview、search、resources、native、artifact、script、framework、device、frida、rebuild、jobs、artifacts、guidance。入口内多种action不单独计工具；后端全部工具数不代表本服务工具数。
 

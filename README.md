@@ -2,7 +2,7 @@
 
 聚焦Android产物、DEX、JS、SO、资源和运行观测的MCP服务。使用本地CLI和静态解析器，复杂查询按需启动REA后端；对模型提供20个分组入口，避免加载整个通用逆向工具集。
 
-当前发行版本为 `0.5.2`。源码仓库：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)；Release 下载与 npm 安装状态请查看仓库的 Releases 和 npm registry。版本变更及验证边界见[变更记录](CHANGELOG.md)、[实施进展](docs/PROGRESS.md)和[验证记录](docs/VALIDATION.md)。
+当前 GitHub Release 为 `v0.5.2`：[下载 Release](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.2)，源码仓库：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)。`0.5.2`尚未发布到 npm registry；可从 GitHub Release 下载 tarball，或按下方说明从源码运行。版本变更及验证边界见[变更记录](CHANGELOG.md)、[实施进展](docs/PROGRESS.md)和[验证记录](docs/VALIDATION.md)。
 
 OpenCode 连接名和专用模式名均为 `android-reserve`，协议服务名与 npm 包名为 `android-reserve-mcp`。OpenCode 工具前缀为 `android-reserve_`。各类应用的覆盖范围见 [能力与限制](docs/CAPABILITIES.md)。
 

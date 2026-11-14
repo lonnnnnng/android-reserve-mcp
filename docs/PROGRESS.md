@@ -1,6 +1,6 @@
 # 实施进展
 
-截至2026-11-14，本地`v0.5.1` tag保留，当前发行候选为`0.5.2`。未配置Git remote，GitHub仓库查询未成功，公开npm registry查询返回404，未见公开发行。`v0.5.0`旧tag保持不变。已用自有fixture及GitHub官方样本推进主流Android链路；完整技术栈路线图仍未全部完成。用户暂无Unity/Unreal/MAUI/Harmony真实产物，不把结构夹具当完整引擎App验收。
+截至2026-11-14，`v0.5.2`已发布到公开GitHub仓库并标记Latest；`v0.5.0`、`v0.5.1`旧tag保持不变。npm registry发布未成功（`npm publish`返回E404，`npm whoami`返回E401），因此目前仅有GitHub Release。已用自有fixture及GitHub官方样本推进主流Android链路；完整技术栈路线图仍未全部完成。用户暂无Unity/Unreal/MAUI/Harmony真实产物，不把结构夹具当完整引擎App验收。
 
 ## 本批已落地
 
@@ -56,4 +56,4 @@ Java/APK/资源/重建签名、mapping、JS AST/source map、独占Native target
 
 实际使用、依赖与预算见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)、[ENVIRONMENT.md](ENVIRONMENT.md)。原始全路线评估保留在ROADMAP-GAPS.md；未完成项不通过改名或增加工具定义算完成。
 
-本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`0.5.2`候选通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。GitHub remote/仓库尚未配置，npm未认证，公开发行和远端CI未完成。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。
+本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`v0.5.2`通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。GitHub Actions的Ubuntu/macOS任务均成功。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。GitHub Release已发布；npm发布待恢复账号认证。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。

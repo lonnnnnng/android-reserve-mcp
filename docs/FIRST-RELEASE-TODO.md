@@ -1,6 +1,6 @@
 # 首发与后续待办
 
-核对日期：2026-11-14。本地`v0.5.1` tag保留，待发行候选版本为`0.5.2`；`v0.5.0`仍保留。仓库没有Git remote；GitHub查询未成功，公开npm registry未认证查询返回404，未见公开发行。
+核对日期：2026-11-14。`v0.5.2`已发布到公开GitHub仓库，`v0.5.0`与`v0.5.1`旧tag保留。npm publish因`npm whoami` E401和registry publish E404未完成；GitHub Release与npm发布状态分别跟踪。
 
 ## 首发门槛
 
@@ -8,13 +8,13 @@
 | --- | --- | --- |
 | 已完成（tag快照） | 0.5.1本机质量门 | 从tag导出快照后，39项自动测试、语法检查、51文件包清单、tarball实装通过；静态/Compose/分包/store smoke有本地报告记录 |
 | 已完成（tag快照） | 0.5.1通用增量 | View onClick、source map/container evidence、真实Compose调用候选、CDP/loader拒绝路径已在tag中；能力边界见CAPABILITIES和VALIDATION |
-| 需复核 | npm包名/发布身份 | 未认证`npm view`返回404、`npm whoami`为401；不能据此确认可发布或绝对不存在，需在发布前用目标账号复查 |
-| 未完成 | GitHub仓库/remote | 本地无remote；`gh repo view lonnnnnng/android-reserve-mcp`未能解析仓库。需确定账号下目标仓库并配置remote，不能由当前证据断言私有仓库是否存在 |
-| 已完成（本地候选） | 0.5.2候选定版 | package.json、lockfile、CLI版本和变更记录已同步；本地测试通过，新tag使用`v0.5.2`并保留已有`v0.5.1` |
-| 未完成 | 首次公开发行 | 配置remote并完成目标tag推送、GitHub Release/CI；恢复npm发布身份后发布包并从registry安装验证。当前tarball smoke只验证本机打包，不是公开发布 |
+| 待处理 | npm包名/发布身份 | `npm whoami`返回401、`npm publish`返回404；需登录目标npm账号并确认包名权限后再发布及验证安装 |
+| 已完成 | GitHub仓库/remote | 公开仓库`https://github.com/lonnnnnng/android-reserve-mcp`已创建并配置为origin |
+| 已完成 | 0.5.2提交/tag | 主分支与annotated tag `v0.5.2`已推送；保留`v0.5.1`旧tag |
+| 已完成（GitHub） | 首次公开发行 | GitHub Release已发布并为Latest；Ubuntu/macOS CI均成功，tarball与SHA-256资产下载回验通过 |
 | 发布后 | 客户端验证 | 重启OpenCode并检查`android-reserve`可见20个工具；现有配置保留，不改provider/API Key |
 
-首发不必等待每个Android框架专项全部完成。`v0.5.1`是本地已有tag，当前定版目标为`0.5.2`；不能重用或移动旧tag。
+首发不必等待每个Android框架专项全部完成。GitHub版`v0.5.2`已发布；待恢复npm账号认证后再完成registry发行。
 
 ## 可在当前环境继续完成
 
