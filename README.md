@@ -92,7 +92,7 @@ node src/cli.js --version
 - Mono 只支持已加载 Mono、ARM64、静态非泛型 `int32` 方法；CoreCLR、NativeAOT 和复杂托管 ABI 不在当前范围。
 - Unity、Unreal、HarmonyOS NEXT 暂缓。
 
-详细证据和限制见 [动态关联指南](docs/DYNAMIC-CORRELATION.md)、[能力矩阵](docs/CAPABILITIES.md)、[验证记录](docs/VALIDATION.md) 和 [环境依赖](docs/ENVIRONMENT.md)。
+完整的“已完成 / 部分完成 / 待开发 / 暂缓 / 下一步”路线图见 [ROADMAP.md](docs/ROADMAP.md)。详细证据和限制见 [动态关联指南](docs/DYNAMIC-CORRELATION.md)、[能力矩阵](docs/CAPABILITIES.md)、[验证记录](docs/VALIDATION.md) 和 [环境依赖](docs/ENVIRONMENT.md)。
 
 ## 开发验证
 
