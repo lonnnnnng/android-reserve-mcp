@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "android-reserve": {
+      "command": "node",
+      "args": ["/absolute/path/android-reserve-mcp/src/cli.js", "--allowedRoots", "/absolute/path/apk-projects"]
+    }
+  }
+}

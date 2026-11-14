@@ -1,0 +1,65 @@
+{
+  "name": "android-reserve-mcp",
+  "version": "0.5.0",
+  "description": "Focused Android reverse-engineering MCP with bounded artifacts and a lazy analysis backend",
+  "type": "module",
+  "bin": {
+    "android-reserve-mcp": "src/cli.js"
+  },
+  "files": [
+    "src",
+    "helpers/*.js",
+    "helpers/*.mjs",
+    "helpers/*.py",
+    "helpers/*.java",
+    "docs",
+    "examples",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=26.12.1"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test test/*.test.js",
+    "check": "node scripts/check.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
+    "smoke:release": "node scripts/release-smoke.mjs",
+    "smoke:static": "node scripts/smoke.mjs",
+    "smoke:native": "node scripts/p0-smoke.mjs",
+    "smoke:hermes": "node scripts/framework-smoke.mjs",
+    "smoke:device": "node scripts/device-smoke.mjs",
+    "smoke:java": "node scripts/java-device-smoke.mjs",
+    "smoke:jni": "node scripts/jni-device-smoke.mjs",
+    "smoke:flutter": "node scripts/flutter-smoke.mjs",
+    "smoke:managed": "node scripts/managed-smoke.mjs",
+    "smoke:godot": "node scripts/godot-smoke.mjs",
+    "smoke:packages": "node scripts/packages-smoke.mjs",
+    "smoke:kotlin": "node scripts/kotlin-smoke.mjs",
+    "smoke:store": "node scripts/store-smoke.mjs",
+    "smoke:hybrid": "node scripts/hybrid-device-smoke.mjs"
+  },
+  "dependencies": {
+    "@babel/generator": "8.1.2",
+    "@babel/parser": "8.1.2",
+    "@babel/traverse": "8.1.2",
+    "@jridgewell/trace-mapping": "0.3.31",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "frida-compile": "19.1.0",
+    "frida-java-bridge": "7.0.13",
+    "zod": "4.6.7"
+  },
+  "author": "long",
+  "license": "MIT",
+  "overrides": {
+    "frida": {
+      "minimatch": "11.0.1"
+    }
+  },
+  "allowScripts": {
+    "frida@17.26.3": true
+  }
+}
