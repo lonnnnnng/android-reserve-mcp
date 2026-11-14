@@ -1,0 +1,268 @@
+{
+  "date": "2026-11-15",
+  "version": "0.5.4",
+  "status": "local-development-validated-not-published",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v26.12.1"
+  },
+  "tests": {
+    "total": 75,
+    "passed": 75,
+    "failed": 0
+  },
+  "syntax": "passed",
+  "packageSnapshotFiles": 68,
+  "fullInstallation": {
+    "passed": true,
+    "checks": {
+      "bindings": [
+        {
+          "path": "node_modules/frida",
+          "version": "17.26.3",
+          "integrity": "sha512-7sDPgoqUpTuB4mHi/0+iyQO/M1gE5tB5SWWAm8PYpG3rXatbtSgOupDwst4nvNe+dYE3OPqdUwSAMsnENW79Mw=="
+        },
+        {
+          "path": "node_modules/rea-agents/node_modules/frida",
+          "version": "17.23.2",
+          "integrity": "sha512-gRCmmTUFdEILyHRN1b66erRoXafwsfWTqXyoBBqkSCFX0Ue7Jhvs/KhA3JO0XrgITNlPd91QAGsFvWzh0mhVgg=="
+        }
+      ],
+      "bindingImports": [
+        {
+          "version": "17.26.3",
+          "status": "verified",
+          "deviceConnected": false
+        },
+        {
+          "version": "17.23.2",
+          "status": "verified",
+          "deviceConnected": false
+        }
+      ],
+      "protocol": {
+        "version": "0.5.4",
+        "tools": 20
+      },
+      "deep": {
+        "checks": {
+          "fridaBinding": {
+            "status": "verified",
+            "package": "frida",
+            "version": "17.26.3",
+            "implementationSha256": "408959cd8daa899370884ea4c7d763916b1ea2960ef4ce8118956870a600bda9",
+            "deviceConnected": false
+          },
+          "javaCompiler": {
+            "status": "verified",
+            "bridge": {
+              "package": "frida-java-bridge",
+              "version": "7.0.13",
+              "implementationSha256": "ee119401893ab7353525fe181c99554cd13776c10a47e24ebf29c2d0de28a11c"
+            },
+            "compiler": {
+              "package": "frida-compile",
+              "version": "19.1.0",
+              "implementationSha256": "4368b342a6437d86664d4a50f26ab014aec337ff5871d650e434ea3931e3bde8"
+            },
+            "bundle": "java-compiler/java-observer.bundle.js",
+            "bytes": 480509,
+            "sha256": "13150c5d40d0502c62d5ef7ed96029147970bea6c407bd0f114bcc13d929bc3d",
+            "injected": false
+          },
+          "rea": {
+            "status": "verified",
+            "server": {
+              "name": "rea",
+              "version": "6.9.0"
+            },
+            "tools": 255,
+            "requiredTools": [
+              "search_android_classes",
+              "inspect_android_class",
+              "inspect_android_method",
+              "trace_android_references",
+              "start_frida_session",
+              "load_frida_script",
+              "close_frida_session"
+            ],
+            "targetOpened": false,
+            "deviceConnected": false
+          }
+        },
+        "partial": false,
+        "scope": "宿主binding导入、固定Java模板实际编译、REA协议握手；不打开APK、不连接设备，不证明Android运行兼容性"
+      },
+      "cleanup": {
+        "records": 1,
+        "confirmed": true
+      }
+    }
+  },
+  "runtimeTree": {
+    "sha256": "c6abd3f344aba7bc2ce93a645e5b02d819d8c2b3c10bd9d72f7a8073b6d2139a",
+    "files": [
+      [
+        "helpers/artifact.py",
+        "e75ad33bb90492aa25050b32586e34835cf8abf400009f43d7bd56e5976fd795"
+      ],
+      [
+        "helpers/assembly-store.py",
+        "21086a7a7eba2879253e30ba07a10e1556fe4a5d697a546f6709c4ce6e9bedfc"
+      ],
+      [
+        "helpers/flutter-channels.py",
+        "f3232b9e633efc6a4f76c7a09a48450d0770f1869adfbb3dfb38407cdb1d042f"
+      ],
+      [
+        "helpers/java-compatibility.js",
+        "305c23b77242a666c01cb8c002ec8ddd8be5a14e7bec2affc28de6c594cd525a"
+      ],
+      [
+        "helpers/java-group-observer.js",
+        "6171b42987a8eb5d64d037f343691b8bab252df9e7422140e38f76e30506d93d"
+      ],
+      [
+        "helpers/java-loaders.js",
+        "0b1d7eb8c1a6e72fee338c7098fbad949293d7cd2483d6f7c910fa0c1e25edc0"
+      ],
+      [
+        "helpers/java-observer.js",
+        "d3bf92bdfbcc7a5bc6ddf30786bebcfcf0da87e9207d3d65694f2eb3cd9409bf"
+      ],
+      [
+        "helpers/jni-observer.js",
+        "37059e2c969eafbe2f6b40fbd21fb891abc178716155221f131fb9a95d0d2694"
+      ],
+      [
+        "helpers/MetadataInspect.java",
+        "213ddc6b3dc11a1dbc479e685de7b0ac7e5f3df311b13cab48a30f77df719f8f"
+      ],
+      [
+        "helpers/mono-observer.js",
+        "40e0f2b33f9258cde4a54e1c0f3c4a3c987b38d97ee28687d06715bc7e5eac91"
+      ],
+      [
+        "helpers/native-location.js",
+        "c5518c4a97f0c208dc154b13cea4e312929f07b6e884ce666647304b39947c32"
+      ],
+      [
+        "helpers/package-set.py",
+        "14c63f04237c1d4082c1dd0ac94e249be5b9ef228e4fd3fa7280bb0f6e1005f4"
+      ],
+      [
+        "helpers/script.mjs",
+        "2161cca9afa4132b3050663ab1e01d82b93aadd2cdf74a115a0b2b1968a60ecc"
+      ],
+      [
+        "helpers/static.py",
+        "dfb90beb4942e47b9655494902c92e281997c83b97d1f8a0e6e74c1a82360f74"
+      ],
+      [
+        "helpers/view-events.py",
+        "ba93b4ada91b0f96a161d2c0d56141af6a78c9ee1b509bc5676c9aa1927a5d60"
+      ],
+      [
+        "src/actions.js",
+        "acbb368728a5a0b2d4cc13f75bc247fb39d2574b49bd274f2e39e16633514051"
+      ],
+      [
+        "src/analysis.js",
+        "380faabaceffb6918c26dbe0e9dca33712291fa7f5395f28246091960d6f5428"
+      ],
+      [
+        "src/cli.js",
+        "f4db7f74d631c1cb8ae3ca61e1658640aaf5edbc6b00d537ccc8c60d19dad56a"
+      ],
+      [
+        "src/core/backend.js",
+        "64da55c4c5bcd63bd61896b1e0964cea0d016362def73f7e342e7173e3a6e2c7"
+      ],
+      [
+        "src/core/deadline.js",
+        "14bdb2b7052aaeb7ea2cf1af3bc89af93cdea60b270e750434ccfafa2cc7be40"
+      ],
+      [
+        "src/core/diagnostics.js",
+        "ea5823abf1bf9c2ccef93f091ea622ff4835ef6a49a76fb8ea8b42cc14c1fe0c"
+      ],
+      [
+        "src/core/engines.js",
+        "64485e39a4c456b5a9a4982439bea4d24b2c48063dd4d24cc0c86e8eb83b9123"
+      ],
+      [
+        "src/core/evidence.js",
+        "ae5221fdde13f8fd408a1a092f12d7e7a666959a013c14ed7dbd4a3c49364801"
+      ],
+      [
+        "src/core/frida-scripts.js",
+        "e53d141f751cc5c548fb3bd0cd11c3a047b9f1895c9ec379bbc681221ca7e2b5"
+      ],
+      [
+        "src/core/java-agent.js",
+        "7ca52df484429acdcabdf7c7b0cfb215e456dd19eb27a715973722091a593f92"
+      ],
+      [
+        "src/core/jobs.js",
+        "8ef8546c5ad3cbedf2eaa9c0cb3bcdf2708a5cfb9a07eae0c40aec9f87479743"
+      ],
+      [
+        "src/core/kotlin.js",
+        "440a37bada75b91d139f0c5bef4627f81a3789776f6b441e27ad75ee8b98afc8"
+      ],
+      [
+        "src/core/managed.js",
+        "3b0a4ff0bba88b549b668f5b298262fb8cf1bf02678841d90d9b992a6333428f"
+      ],
+      [
+        "src/core/mono-agent.js",
+        "93d101b5e954172a8f7160a2338a94f3b496ccb89553bae3451a489695e4d95b"
+      ],
+      [
+        "src/core/native.js",
+        "8146e209174c25b67fe53dcff3a3efdce90c6477ca3233804260fa2118119415"
+      ],
+      [
+        "src/core/packages.js",
+        "b085bd3cad962fc5137be91c4ed2ffb026a3a5bf2071e4320f4c8351b16e2c6d"
+      ],
+      [
+        "src/core/paths.js",
+        "5501fcdf810b8a4b8c522b3f3efc136ff6df5fb4832ede0036aedf6e41731a51"
+      ],
+      [
+        "src/core/process.js",
+        "2939713fb4adf18ff4cafa5ae7eec1c78c0c3096c3d07d652239a0b1829788fe"
+      ],
+      [
+        "src/core/webview.js",
+        "b8fb40f2b0b06444740a80d4d589f044a2f0747b301ef308e47ab7c6637a8947"
+      ],
+      [
+        "src/server.js",
+        "febd326815a5a55fb1ff88257133717c23fc1eb9e589e701b28187525cbc2c86"
+      ],
+      [
+        "src/version.js",
+        "703c381fe7e6a78dfd9bc4cf239dd651ba10b28ac0a34064ceb67c23afb8d435"
+      ]
+    ]
+  },
+  "device": {
+    "model": "POCO_F2_Pro",
+    "serial": "31936bb6",
+    "android": "16",
+    "abi": "arm64-v8a",
+    "dynamicGate": "pending"
+  },
+  "remaining": [
+    "mapping-and-exact-method-identity",
+    "split-query",
+    "Compose-click-state-recomposition",
+    "Flutter-arguments-reply",
+    "RN-reject-JS-callsite",
+    "three-consecutive-device-regressions",
+    "MAUI-KMP-Godot-expansion"
+  ]
+}

@@ -22,7 +22,7 @@
 
 | 工具 | 主要 action | 用途 | 结果重点 |
 | --- | --- | --- | --- |
-| `doctor` | 无 | 检查 Node、Python、JDK、Android SDK、JADX、apktool、REA 和允许目录 | 依赖状态与修复建议 |
+| `doctor` | 无；可选 `deep=true` | 默认检查路径；深度模式实际导入 binding、编译 Java 模板、握手 REA | 深度检查返回任务，不连接设备 |
 | `apk` | `inspect`、`signature`、`manifest` | APK ZIP、DEX、ABI、SHA-256、签名和 Manifest 摘要 | 任务报告，不修改输入 |
 | `decode` | `jadx`、`apktool`、`both` | 导出 Java、资源和 smali | 独立任务目录，可部分成功 |
 | `dex` | `classes`、`class`、`method`、`references`、`kotlin` | DEX 类、方法、引用、Kotlin metadata、Compose 候选、JavascriptInterface 声明 | 精确签名、候选位置和 partial |

@@ -1,6 +1,6 @@
 {
   "name": "android-reserve-mcp",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Focused Android reverse-engineering MCP with bounded artifacts and a lazy analysis backend",
   "type": "module",
   "bin": {
@@ -28,6 +28,7 @@
     "check": "node scripts/check.mjs",
     "check:pack": "node scripts/check-pack.mjs",
     "smoke:release": "node scripts/release-smoke.mjs",
+    "smoke:release:full": "node scripts/release-smoke.mjs --full",
     "smoke:static": "node scripts/smoke.mjs",
     "smoke:native": "node scripts/p0-smoke.mjs",
     "smoke:hermes": "node scripts/framework-smoke.mjs",

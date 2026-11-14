@@ -1,8 +1,14 @@
 import { resolveNativeAddress } from './native-location.js';
 import { withJavaFactory } from './java-loaders.js';
+import { javaCompatibility } from './java-compatibility.js';
 
 // long: Java和Native共用此agent的线程栈；只将原方法执行区间内的事件关联，观测自身的JNI不混入业务证据。
 export function startJavaObserver(Java, config, env = globalThis) {
+  const compatibility = javaCompatibility(config);
+  if (!compatibility.supported) {
+    try { env.send({ event: 'java-compatibility-blocked', ...compatibility }); } catch {}
+    return { stop() {} };
+  }
   const { Process, Interceptor, Thread, Backtracer } = env;
   const active = new Map(), observing = new Map(), listeners = [], timers = [];
   let stopped = false, selected = null, installed = false, invocation = 0, sequence = 0, captured = 0, releaseLoader = () => {};

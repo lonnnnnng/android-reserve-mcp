@@ -4,6 +4,8 @@
 
 当前发布版：`0.5.3`。
 
+当前开发版：`0.5.4`，尚未发布。新增注入前兼容性拒绝、任务实例所有权、请求证据终态合并、退出期限及深度依赖检查，见[稳定性进展](docs/STABILITY-20261115.md)。
+
 - GitHub：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)
 - Release：[v0.5.3](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.3)
 - npm registry 当前 `latest`：`0.5.3`。
@@ -67,6 +69,7 @@ node src/cli.js --version
 
 ```json
 {"tool":"doctor","arguments":{}}
+{"tool":"doctor","arguments":{"deep":true,"timeoutSeconds":90}}
 {"tool":"apk","arguments":{"action":"inspect","path":"/absolute/path/apk-projects/app.apk"}}
 {"tool":"jobs","arguments":{"action":"status","jobId":"<job-id>"}}
 ```
@@ -101,9 +104,10 @@ npm test
 npm run check
 npm run check:pack
 npm run smoke:release
+npm run smoke:release:full
 ```
 
-`npm test` 当前覆盖 57 项自动测试；`smoke:release` 会在临时目录安装实际 npm tarball，验证 20 个 MCP 工具和 `doctor`。设备 smoke 只对明确授权的目标执行，验收脚本不会随 npm 包发布。
+`npm test` 覆盖离线回归与真实协议测试；`smoke:release` 验证 tarball 的 20 个工具和基础 `doctor`。`smoke:release:full` 在隔离目录安装 tarball、固定 REA、两套 Frida binding，再实际编译模板和握手 REA；保留安装报告与日志。`doctor.deep` 返回任务，使用 `jobs` 和 `artifacts` 读取；它不连接设备。设备 smoke 只对明确授权的目标执行，验收脚本不会随 npm 包发布。
 
 ## 安全与许可
 

@@ -66,7 +66,10 @@ export class Cdp {
     if (method === 'Network.requestWillBeSent') {
       if (this.requests.size >= 200 && !this.requests.has(p.requestId)) { this.partial = true; return; }
       const old = this.requests.get(p.requestId), request = p.request || {};
-      this.requests.set(p.requestId, { requestId: p.requestId, url: String(request.url || '').slice(0, 8192), method: request.method, headers: headers(request.headers), timestamp: p.timestamp, initiator: initiatorView(p.initiator), redirects: [...(old?.redirects || []), ...(p.redirectResponse ? [{ url: p.redirectResponse.url, status: p.redirectResponse.status }] : [])].slice(-20) });
+      const redirects = [...(old?.redirects || []), ...(p.redirectResponse ? [{ url: p.redirectResponse.url, status: p.redirectResponse.status }] : [])];
+      const redirectsTruncated = !!old?.redirectsTruncated || redirects.length > 20;
+      if (redirectsTruncated) this.partial = true;
+      this.requests.set(p.requestId, { requestId: p.requestId, url: String(request.url || '').slice(0, 8192), method: request.method, headers: headers(request.headers), timestamp: p.timestamp, initiator: initiatorView(p.initiator), redirects: redirects.slice(-20), redirectsTruncated });
     }
     const record = this.requests.get(p.requestId);
     if (!record) return;
@@ -178,7 +181,7 @@ export async function webview(context, args) {
     if (args.action === 'open') return context.webviews.open(args, signal);
     if (args.action === 'close') { if (!args.sessionId) throw new Error('close必须明确sessionId'); await context.webviews.close(args.sessionId); return { closed: true }; }
     const entry = await context.webviews.use(args.sessionId, signal), cdp = entry.cdp;
-    const scope = { sessionId: args.sessionId, processEpoch: entry.owner.epoch, serial: entry.args.serial, pid: entry.args.pid };
+    const scope = { sessionId: args.sessionId, processEpoch: entry.owner.epoch, serial: entry.args.serial, pid: entry.args.pid, capturedAt: new Date().toISOString() };
     if (args.action === 'scripts') return { ...scope, scripts: [...cdp.scripts.values()], partial: cdp.partial };
     if (args.action === 'network') {
       const requests = [...cdp.requests.values()].map(row => ({ ...row, ...(row.initiator ? { initiator: { ...row.initiator, frames: row.initiator.frames.map(frame => ({ ...frame, scriptObserved: cdp.scripts.has(frame.scriptId) })) } } : {}) }));
@@ -202,6 +205,6 @@ export async function webview(context, args) {
     } else throw new Error('未知WebView操作');
     if (bytes.length > 2 * 1024 * 1024) throw new Error('WebView产物超过2MiB');
     const artifact = 'captured.' + kind; await fs.writeFile(path.join(dir, artifact), bytes);
-    return { artifact, bytes: bytes.length, sha256: digest(bytes), kind, metadata, serial:entry.args.serial,pid:entry.args.pid,sessionId: args.sessionId, processEpoch: entry.owner.epoch, partial: cdp.partial };
+    return { artifact, bytes: bytes.length, sha256: digest(bytes), kind, metadata, ...scope, partial: cdp.partial };
   });
 }

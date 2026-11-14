@@ -33,10 +33,12 @@ export function run(command, args, { cwd, signal, timeoutMs = 60000, maxBytes = 
     // long: 参数数组直接传给进程，不经 shell，APK 路径中的空格和元字符不能变成命令。
     const child = spawn(command, args, { cwd, env, shell: false, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '', stderr = '', bytes = 0, truncated = false, timedOut = false;
-    let force;
+    let force, settled = false;
     const terminate = () => {
-      if (!child.pid || child.exitCode !== null) return;
+      // long: 父CLI可能已经退出，但孙进程仍持有管道；POSIX进程组须继续终止，不能只看父进程exitCode。
+      if (!child.pid || settled || (process.platform === 'win32' && child.exitCode !== null)) return;
       try { process.kill(process.platform === 'win32' ? child.pid : -child.pid, 'SIGTERM'); } catch {}
+      if (force) return;
       force = setTimeout(() => { try { process.kill(process.platform === 'win32' ? child.pid : -child.pid, 'SIGKILL'); } catch {} }, 1500);
       force.unref();
     };
@@ -50,7 +52,7 @@ export function run(command, args, { cwd, signal, timeoutMs = 60000, maxBytes = 
     };
     child.stdout.on('data', collect('stdout')); child.stderr.on('data', collect('stderr'));
     signal?.addEventListener('abort', terminate, { once: true });
-    const cleanup = () => { clearTimeout(timer); clearTimeout(force); signal?.removeEventListener('abort', terminate); };
+    const cleanup = () => { settled = true; clearTimeout(timer); clearTimeout(force); signal?.removeEventListener('abort', terminate); };
     child.on('error', error => { cleanup(); reject(error); });
     child.on('close', (code, exitSignal) => { cleanup(); resolve({ code, exitSignal, stdout, stderr, truncated, timedOut, canceled: !!signal?.aborted }); });
   });

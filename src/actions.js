@@ -15,6 +15,9 @@ import { runtimeScript, nativeTraceScript, validateNativeHook } from './core/fri
 import { VERSION } from './version.js';
 import { compileJavaAgent, validateJavaGroup } from './core/java-agent.js';
 import { monoTraceScript } from './core/mono-agent.js';
+import { assertJavaCompatibility } from '../helpers/java-compatibility.js';
+import { withDeadline } from './core/deadline.js';
+import { deepDiagnostics } from './core/diagnostics.js';
 import { WebViews } from './core/webview.js';
 import { kotlinMetadata } from './core/kotlin.js';
 export { webview } from './core/webview.js';
@@ -30,17 +33,47 @@ const required = (value, name) => { if (value === undefined || value === '') thr
 
 export async function createContext(options = {}) {
   const paths = await Paths.create(options.allowedRoots || [process.cwd()], options.workspace || path.join(os.homedir(), '.local/share/android-reserve-mcp'));
-  const jobs = new Jobs(paths.workspace); await jobs.init();
+  const jobs = new Jobs(paths.workspace, { closeTimeoutMs: options.jobCloseTimeoutMs || 10000 }); await jobs.init();
   return { paths, jobs, backend: options.backend || new Backend(options), webviews: options.webviews || new WebViews(options.adb, paths.workspace), nativeTargets: new NativeTargets(options.nativeFactory || (() => new Backend({ ...options, nativeEngine: true }))), sessions: new Set(), sessionTargets: new Map(), scripts: new Map(), javaObservers: new Map(), compileJava: options.javaCompiler || compileJavaAgent,
     skillRoots: options.skillRoots || [path.join(os.homedir(), '.config/opencode/skills')],
     async close() {
-      await jobs.close();
-      const webviewCleanup=await Promise.allSettled([this.webviews.close()]);
-      // long: 退出时仍清理其他后端，但必须把未确认的转发清理写入stderr，供用户按账本复核。
-      if(webviewCleanup[0].status==='rejected')process.stderr.write('WebView清理未确认，请检查webview-forwards.jsonl：'+String(webviewCleanup[0].reason?.message).slice(0,500)+'\n');
-      await this.nativeTargets.close();
-      for (const id of this.sessions) { try { await this.backend.call('close_frida_session', { session_id: id }); } catch {} }
-      await this.backend.close();
+      if (this.closing) return this.closing;
+      this.closing = (async () => {
+        const timeoutMs = options.cleanupTimeoutMs || 5000, errors = [];
+        const attempt = async (label, operation) => {
+          try { return await withDeadline(operation, { timeoutMs, label }); }
+          catch (error) { errors.push({ stage: label, error: String(error.message).slice(0, 500) }); }
+        };
+        const shutdownFile = path.join(paths.workspace, 'shutdown-' + jobs.instanceId + '.json');
+        const saveShutdown = async record => {
+          await fs.writeFile(shutdownFile + '.tmp', JSON.stringify(record, null, 2), { mode: 0o600 });
+          await fs.rename(shutdownFile + '.tmp', shutdownFile);
+        };
+        // long: SIGKILL可能发生在清理中间；先记录未完成状态和拥有者，再写终态，不能只在失败后才尝试留账本。
+        await attempt('保存退出开始状态', () => saveShutdown({ closed: false, state: 'closing',
+          unresolvedFridaSessions: [...this.sessions], unresolvedNativeTargets: [...this.nativeTargets.targets.keys()],
+          unconfirmedObservers: [...this.javaObservers].map(([sessionId, observer]) => ({ sessionId, scriptId: observer.scriptId, state: observer.state })) }));
+        const taskCleanup = await jobs.close();
+        await Promise.all([
+          attempt('WebView清理', () => this.webviews.close()),
+          attempt('Native清理', () => this.nativeTargets.close({ timeoutMs })),
+          ...[...this.sessions].map(id => attempt('Frida会话清理', async signal => {
+            await this.backend.call('close_frida_session', { session_id: id }, signal, { timeoutMs });
+            this.sessions.delete(id); this.sessionTargets.delete(id); this.scripts.delete(id); this.javaObservers.delete(id);
+          })),
+        ]);
+        await attempt('REA退出', () => this.backend.close());
+        const report = { closed: taskCleanup.closed && !errors.length, state: 'finished', tasks: taskCleanup, errors,
+          unresolvedFridaSessions: [...this.sessions], unresolvedNativeTargets: [...this.nativeTargets.targets.keys()],
+          unresolvedBackendConnections: [...(this.backend.connections || [])].map(connection => ({ pid: connection.pid ?? connection.transport?.pid, cleanupError: connection.cleanupError || null })),
+          unconfirmedObservers: [...this.javaObservers].map(([sessionId, observer]) => ({ sessionId, scriptId: observer.scriptId, state: observer.state })) };
+        // long: 退出期限结束不等于设备清理成功；持久化未确认的会话，供下一次启动核对，不自动接管或再次注入。
+        await attempt('保存退出终态', () => saveShutdown(report));
+        report.closed = taskCleanup.closed && !errors.length;
+        if (!report.closed) process.stderr.write('退出清理未全部确认，请检查 ' + path.basename(shutdownFile) + ' 与 webview-forwards.jsonl\n');
+        return report;
+      })();
+      return this.closing;
     } };
 }
 
@@ -48,7 +81,7 @@ async function python(command, file, signal) {
   return JSON.parse(checked(await run(await tool('python3'), [helper, command, file], { signal }), command).stdout);
 }
 
-export async function doctor(context) {
+export async function doctor(context, args = {}) {
   const dependencies = {};
   for (const name of ['python3', 'java', 'javac', 'npx', 'jadx', 'apktool', 'adb', 'apkanalyzer', 'apksigner', 'zipalign', 'aapt2', 'd8', 'readelf', 'rg', 'frida']) {
     const executable = await locate(name);
@@ -65,11 +98,16 @@ export async function doctor(context) {
     compressionModules:'未导入验证；LZ4/Zstd提取需要所选Python中的lz4与zstandard',
     webview:'需要ADB与目标已开放的WebView调试socket；此检查不连接设备',
   };
-  return { workspace: context.paths.workspace, allowedRoots: context.paths.roots, dependencies, analysisDependencies,
+  const report = { workspace: context.paths.workspace, allowedRoots: context.paths.roots, dependencies, analysisDependencies,
     optionalEngines: await engineCatalog(),
     rea: { enabled: !context.backend.disabled, package: context.backend.packageName, started: !!context.backend.client, jadxEngine: await jadxEngine(), validation: '仅检查文件与路径；未启动后端、加载 Frida Node binding 或连接设备' },
     devicePolicy: '设备操作必须显式 serial/device_id，不自动选择手机或启动模拟器',
     server: 'android-reserve-mcp', version: VERSION };
+  if (!args.deep) return report;
+  return context.jobs.start('依赖深度检查', async (signal, dir) => {
+    const deep = await deepDiagnostics(context, dir, signal, (args.timeoutSeconds || 90) * 1000);
+    return { ...report, deep, partial: deep.partial };
+  });
 }
 
 export async function apk(context, args) {
@@ -236,6 +274,7 @@ export async function frida(context, args) {
   if (['java-methods', 'trace-java'].includes(args.action)) { required(args.className, 'className'); required(args.methodName, 'methodName'); }
   if (args.action === 'trace-java' && !Array.isArray(args.argumentTypes)) throw new Error('trace-java必须显式argumentTypes，空参数使用[]；先java-methods读取实际重载');
   if (args.action === 'trace-java-group') validateJavaGroup(args);
+  assertJavaCompatibility(args);
   if (args.action === 'trace-java') for (const hook of args.nativeHooks || []) validateNativeHook(hook);
   if (args.action === 'unload') {
     parameters.script_id = required(args.scriptId, 'scriptId');
@@ -311,7 +350,7 @@ export async function frida(context, args) {
     } catch (error) {
       let cleanupConfirmed = reservation ? ['queued', 'compiling'].includes(reservation.state) : !loadedId;
       if (loadedId && (generated || javaAction || managedFailure)) {
-        try { await context.backend.call('unload_frida_script', { session_id: args.sessionId, script_id: loadedId }); context.scripts.get(args.sessionId)?.delete(loadedId); cleanupConfirmed = true; } catch {}
+        try { await context.backend.call('unload_frida_script', { session_id: args.sessionId, script_id: loadedId }, undefined, { timeoutMs: 5000 }); context.scripts.get(args.sessionId)?.delete(loadedId); cleanupConfirmed = true; } catch {}
       }
       // long: 注入结果或撤销状态不确定时保留占位，要求close会话，不能允许下一次trace覆盖可能仍在运行的hook。
       if (reservation && context.javaObservers.get(args.sessionId) === reservation) {

@@ -1,5 +1,15 @@
 # 变更记录
 
+## 0.5.4 — 2026-11-15（开发中，尚未发布）
+
+- 已知 Flutter Reply/Compose 状态入口在编译、进程占位和注入前拒绝，返回结构化 `java_compatibility_blocked`；固定 helper 也执行相同保护。
+- 每个任务记录实例、PID 和进程代次；其他实例只读状态，不改写活跃任务或取消他人任务。拥有者结束后派生 `interrupted`，设备清理单独标未确认。
+- WebView 请求证据保留来源快照，旧 pending 不覆盖终态；冲突终态与快照预算标 partial。正文哈希明确连接同会话请求，缓存、Service Worker 和重定向截断保留。
+- REA 启动/握手、整体任务与退出都有期限；连接中取消不影响其他等待者，晚到握手不重新登记。未确认清理写入 shutdown 账本。
+- `doctor.deep` 实际导入 binding、编译固定 Java 模板和握手 REA；新增完整 tarball 安装门禁与 Ubuntu/macOS CI 配置。
+- 最终75项测试、语法/包检查和实际完整安装通过；两套Frida binding实际导入与退出账本确认完成，36个运行源码文件与安装快照SHA一致。远端CI尚未运行。
+- 动态兼容修复、mapping/完整签名/分包查询和连续三次真机门槛仍在推进，见 `docs/STABILITY-20261115.md`。
+
 ## 0.5.3 — 2026-11-14
 
 - trace-java-group：最多8个方法同agent线程栈与JNI同对象回复；重复复用拒绝猜配、TTL丢失身份后停止确定配对，RN Promise与普通Java逆序跨线程样本通过。Flutter/Compose在当前Android16触发JNI transition崩溃，明确未验收。

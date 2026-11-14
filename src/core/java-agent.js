@@ -2,8 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run, checked } from './process.js';
+import { assertJavaCompatibility } from '../../helpers/java-compatibility.js';
 
 export async function compileJavaAgent(args, dir, signal) {
+  assertJavaCompatibility(args);
   const jni = args.action === 'trace-jni';
   const grouped = args.action === 'trace-java-group';
   const observer = fileURLToPath(new URL(jni ? '../../helpers/jni-observer.js' : grouped ? '../../helpers/java-group-observer.js' : '../../helpers/java-observer.js', import.meta.url));

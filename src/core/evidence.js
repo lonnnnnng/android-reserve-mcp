@@ -5,15 +5,64 @@ import { within } from './paths.js';
 const key = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const sha = value => typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value);
 
+function requestSnapshot(row, source, capturedAt) {
+  return { source, capturedAt: capturedAt ?? null, state: row.failure ? 'failed' : row.finished ? 'finished' : 'pending',
+    url: row.url, method: row.method, status: row.response?.status ?? row.status, failure: row.failure,
+    fromDiskCache: row.response?.fromDiskCache ?? row.fromDiskCache, fromServiceWorker: row.response?.fromServiceWorker ?? row.fromServiceWorker,
+    redirects: row.redirects, redirectsTruncated: row.redirectsTruncated, captureClosed: row.captureClosed, closeReason: row.closeReason };
+}
+
+export function mergeEvidenceNode(prior, next) {
+  if (next.kind !== 'webview-request') {
+    let mismatch = next.kind === 'artifact' && prior?.bytes !== undefined && next.bytes !== undefined && prior.bytes !== next.bytes;
+    const node = { ...prior, ...next };
+    if (next.kind === 'artifact') {
+      // long: 同一内容可能来自多份文件；双方累计来源和矛盾字节数都保留，不能由后合并的快照抹掉。
+      const paths = [...new Set([...(prior?.sourcePaths || []), ...(next.sourcePaths || []), prior?.sourcePath, next.sourcePath].filter(Boolean))].sort();
+      if (paths.length) { node.sourcePaths = paths; node.sourcePath = paths[0]; }
+      const counts = [...new Set([...(prior?.byteCounts || []), ...(next.byteCounts || []), prior?.bytes, next.bytes].filter(value => value !== undefined))].sort((a, b) => a - b);
+      if (counts.length > 1) { mismatch = true; node.byteCounts = counts; node.bytes = undefined; }
+    }
+    return { node, partial: !!mismatch };
+  }
+  const snapshots = new Map();
+  for (const node of [prior, next].filter(Boolean)) {
+    for (const snapshot of node.observations || [requestSnapshot(node, { legacy: true }, null)]) snapshots.set(key(snapshot), snapshot);
+  }
+  const observations = [...snapshots.values()].sort((a, b) => key(a).localeCompare(key(b)));
+  const finished = observations.filter(row => row.state === 'finished'), failed = observations.filter(row => row.state === 'failed');
+  const terminalConflict = !!prior?.terminalConflict || !!next.terminalConflict || (finished.length > 0 && failed.length > 0) ||
+    new Set(finished.map(row => key([row.status ?? null, row.url ?? null, row.method ?? null]))).size > 1 ||
+    new Set(failed.map(row => key(row.failure))).size > 1;
+  const candidates = finished.length ? finished : failed.length ? failed : observations;
+  const selected = [...candidates].sort((a, b) => {
+    const time = row => typeof row.capturedAt === 'number' ? row.capturedAt : Date.parse(row.capturedAt) || 0;
+    return time(a) - time(b) || key(a).localeCompare(key(b));
+  }).at(-1) || {};
+  const truncated = observations.length > 128 || !!prior?.observationsTruncated || !!next.observationsTruncated;
+  // long: 同一CDP请求的旧pending快照不能覆盖终态；冲突终态保留双方原件并标partial，不凭输入顺序挑选成功。
+  const node = { ...prior, ...next, ...selected, state: terminalConflict ? 'conflicting-terminal' : selected.state,
+    finished: !terminalConflict && selected.state === 'finished', status: terminalConflict ? undefined : selected.status,
+    failure: terminalConflict ? undefined : selected.failure, observations: observations.slice(-128),
+    ...(terminalConflict ? { terminalConflict: true } : {}), ...(truncated ? { observationsTruncated: true } : {}) };
+  return { node, partial: terminalConflict || truncated || observations.some(row => row.redirectsTruncated) };
+}
+
 export function indexEvidence(jobId, sources) {
   const nodes = new Map(), edges = new Map(); let partial = false, scanned = 0;
-  const add = (kind, identity, data) => { const id=kind+':'+key(identity), prior=nodes.get(id); if(!prior&&nodes.size>=20000){partial=true;return null;} if(kind==='artifact'&&prior?.bytes!==undefined&&data.bytes!==undefined&&prior.bytes!==data.bytes)partial=true; nodes.set(id,{...prior,id,kind,...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))});return id; };
+  const take = (values, maximum) => {
+    if (!Array.isArray(values)) { if (values != null) partial = true; return []; }
+    // long: 专用索引预算比通用遍历更小；每次裁剪都须传播partial，不能依赖后续walk替它标记遗漏。
+    if (values.length > maximum) partial = true;
+    return values.slice(0, maximum);
+  };
+  const add = (kind, identity, data) => { const id=kind+':'+key(identity), prior=nodes.get(id); if(!prior&&nodes.size>=20000){partial=true;return null;} const merged=mergeEvidenceNode(prior,{id,kind,...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))});partial ||= merged.partial;nodes.set(id,merged.node);return id; };
   const edge = (from,to,relation,source,strength) => {if(!from||!to)return;if(edges.size>=40000){partial=true;return;}const e={from,to,relation,source,strength};edges.set(key(e),e);};
   const run=add('run',jobId,{jobId});
   function walk(value, pointer, source, scope, parentArtifact, depth=0) {
     if(!value||typeof value!=='object')return;
     if(++scanned>50000||depth>24){partial=true;return;}
-    if(Array.isArray(value)){value.slice(0,12000).forEach((v,i)=>walk(v,pointer+'/'+i,source,scope,parentArtifact,depth+1));if(value.length>12000)partial=true;return;}
+    if(Array.isArray(value)){take(value,12000).forEach((v,i)=>walk(v,pointer+'/'+i,source,scope,parentArtifact,depth+1));return;}
     if(value.partial === true || value.truncated === true) partial = true;
     scope={...scope}; for(const [field,target] of [['session_id','session'],['device_id','device'],['script_id','script'],['traceId','trace']])if(typeof value[field]==='string')scope[target]=value[field];
     if(Number.isSafeInteger(value.pid))scope.pid=value.pid;
@@ -25,6 +74,10 @@ export function indexEvidence(jobId, sources) {
       // long: CDP采集会话与进程代次是采集来源，不等于Frida的调用关联；只按实际正文哈希连到静态产物。
       const capture=add('webview-capture',[value.sessionId,value.processEpoch,jobId],{sessionId:value.sessionId,processEpoch:value.processEpoch,serial:value.serial,pid:value.pid,kindOfContent:value.kind,metadata:value.metadata});
       edge(capture,artifact,'captured-content',citation,'cdp-content-hash');
+      if(value.kind==='body'&&typeof value.metadata?.requestId==='string'){
+        const row=value.metadata,request=add('webview-request',[[value.sessionId,value.processEpoch],row.requestId],{sessionId:value.sessionId,processEpoch:value.processEpoch,requestId:row.requestId,observations:[requestSnapshot(row,{...citation,jsonPointer:pointer+'/metadata'},value.capturedAt)]});
+        edge(request,artifact,'captured-response-body',citation,'same-cdp-session-request-id-content-hash');
+      }
     }
     if(typeof value.event==='string'&&scope.script){
       // long: PID/类名/RVA不能跨任务当唯一身份；只在会话+脚本+trace范围按报告的调用ID关联。
@@ -51,28 +104,28 @@ export function indexEvidence(jobId, sources) {
       }
       if(typeof value.registrationId==='string'){const registration=add('jni-registration',[runtime,value.registrationId],{scope,registrationId:value.registrationId});edge(event,registration,'reported-registration-phase',citation,'reported-same-script-call-id');}
     }
-    if(value.className&&Array.isArray(value.functions))for(const f of value.functions.slice(0,1000))if(f.jvmSignature){
+    if(value.className&&Array.isArray(value.functions))for(const f of take(value.functions,1000))if(f.jvmSignature){
       const method=add('java-method',[artifact||jobId,value.className,f.jvmSignature],{className:value.className,signature:f.jvmSignature,suspend:f.suspend,inline:f.inline});
       edge(artifact||run,method,f.exactDexMatch?'metadata-signature-matches-dex':'metadata-declares',citation,f.exactDexMatch?'exact-signature-in-same-artifact':'metadata-declaration');
     }
-    if(value.className&&Array.isArray(value.composeSignals))for(const item of value.composeSignals.slice(0,1000))if(typeof item.jvmSignature==='string'&&item.signals&&typeof item.signals==='object'){
+    if(value.className&&Array.isArray(value.composeSignals))for(const item of take(value.composeSignals,1000))if(typeof item.jvmSignature==='string'&&item.signals&&typeof item.signals==='object'){
       const method=add('compose-method',[artifact||jobId,value.className,item.jvmSignature],{className:value.className,signature:item.jvmSignature,evidence:'composer-parameter-in-compiled-dex'});
       edge(artifact||run,method,'declares-compose-method-candidate',citation,'composer-signature-candidate');
-      for(const [signal,count] of Object.entries(item.signals).slice(0,32))if(Number.isSafeInteger(count)&&count>0){
+      for(const [signal,count] of take(Object.entries(item.signals),32))if(Number.isSafeInteger(count)&&count>0){
         const candidate=add('compose-signal-candidate',[method,signal],{className:value.className,signature:item.jvmSignature,signal,count});
         edge(method,candidate,'has-compiled-compose-signal',citation,'compiled-invoke-reference-candidate');
       }
-      for(const call of (item.callsites||[]).slice(0,2000))if(Number.isSafeInteger(call.dexOffset)&&call.dexOffset>=0&&typeof call.targetSignature==='string'){
+      for(const call of take(item.callsites,2000))if(Number.isSafeInteger(call.dexOffset)&&call.dexOffset>=0&&typeof call.targetSignature==='string'){
         const site=add('compose-callsite-candidate',[method,call.dexOffset,call.targetClass,call.targetSignature],{className:value.className,signature:item.jvmSignature,...call});
         edge(method,site,'contains-compiled-callsite',citation,'dex-invoke-offset-candidate');
       }
     }
     if(artifact&&Array.isArray(value.functions)&&!value.className){
       const location = row => ({ line:row.line,column:row.column,end:row.end });
-      const functions=new Map();for(const f of value.functions.slice(0,12000))if(Number.isInteger(f.start)){const node=add('js-function',[artifact,f.start,f.name],{name:f.name,start:f.start,location:location(f)});functions.set(f.start,node);edge(artifact,node,'contains-function',citation,'static-parser');}
-      for(const c of (value.calls||[]).slice(0,12000))if(functions.has(c.bindingFunctionStart)){const call=add('js-callsite',[artifact,c.start,c.callee],{callee:c.callee,start:c.start,location:location(c)});edge(call,functions.get(c.bindingFunctionStart),'lexical-binding-reference',citation,'static-lexical-resolution');}
+      const functions=new Map();for(const f of take(value.functions,12000))if(Number.isInteger(f.start)){const node=add('js-function',[artifact,f.start,f.name],{name:f.name,start:f.start,location:location(f)});functions.set(f.start,node);edge(artifact,node,'contains-function',citation,'static-parser');}
+      for(const c of take(value.calls,12000))if(functions.has(c.bindingFunctionStart)){const call=add('js-callsite',[artifact,c.start,c.callee],{callee:c.callee,start:c.start,location:location(c)});edge(call,functions.get(c.bindingFunctionStart),'lexical-binding-reference',citation,'static-lexical-resolution');}
     }
-    if(Array.isArray(value.frameworks))for(const f of value.frameworks.slice(0,100))if(f.name){const candidate=add('framework-candidate',[artifact||jobId,f.name],{name:f.name});edge(artifact||run,candidate,'candidate-framework',citation,'candidate-only');}
+    if(Array.isArray(value.frameworks))for(const f of take(value.frameworks,100))if(f.name){const candidate=add('framework-candidate',[artifact||jobId,f.name],{name:f.name});edge(artifact||run,candidate,'candidate-framework',citation,'candidate-only');}
     for(const [field,child] of Object.entries(value))if(!['content','raw_result','annotations'].includes(field)&&!(value.kind==='source-map-position'&&field==='map'))walk(child,pointer+'/'+field.replaceAll('~','~0').replaceAll('/','~1'),source,scope,artifact,depth+1);
   }
   for(const source of sources){const hash=sha(source.artifactHash)?source.artifactHash.toLowerCase():null;const anchor=hash?add('artifact',hash,{sha256:hash}):null;walk(source.value,'',source.file,{},anchor);}
@@ -85,16 +138,16 @@ export function indexEvidence(jobId, sources) {
         const artifact=add('artifact',value.sha256.toLowerCase(),{sha256:value.sha256.toLowerCase(),bytes:value.bytes});
         edge(script(value.metadata.scriptId),artifact,'captured-script-content',citation('/metadata'),'same-cdp-script-id-content-hash');
       }
-      for(const [index,row] of (value.requests||[]).slice(0,200).entries()){
-        const request=add('webview-request',[runtime,row.requestId],{sessionId:value.sessionId,processEpoch:value.processEpoch,requestId:row.requestId,url:row.url,method:row.method,status:row.response?.status,finished:row.finished,failure:row.failure});
-        for(const [i,frame] of (row.initiator?.frames||[]).slice(0,64).entries()){
+      for(const [index,row] of take(value.requests,200).entries()){
+        const request=add('webview-request',[runtime,row.requestId],{sessionId:value.sessionId,processEpoch:value.processEpoch,requestId:row.requestId,observations:[requestSnapshot({...row,captureClosed:value.captureClosed,closeReason:value.closeReason},citation('/requests/'+index),value.capturedAt)]});
+        for(const [i,frame] of take(row.initiator?.frames,64).entries()){
           const site=add('webview-initiator-frame',[runtime,row.requestId,index,i],{...frame,coordinateBase:0,sessionId:value.sessionId,processEpoch:value.processEpoch});
           edge(request,site,'reported-initiator-frame',citation('/requests/'+index+'/initiator/frames/'+i),'cdp-runtime-initiator-stack');
           if(frame.scriptObserved)edge(site,script(frame.scriptId),'references-observed-script',citation('/requests/'+index+'/initiator/frames/'+i),'same-cdp-session-script-id');
         }
       }
     }
-    if(value?.kind==='flutter-channel-candidates')for(const [i,row] of (value.matches||[]).slice(0,10000).entries()){
+    if(value?.kind==='flutter-channel-candidates')for(const [i,row] of take(value.matches,10000).entries()){
       const scope=sha(value.input?.sha256)?value.input.sha256:jobId;
       const dart=add('flutter-dart-callsite-candidate',[scope,row.dart?.source,row.channel,row.method],{channel:row.channel,method:row.method,source:row.dart?.source,analysisJobId:value.analysisJobId});
       const android=add('flutter-android-handler-candidate',[scope,row.android?.source,row.android?.handlerClass,row.android?.handlerMethod],{...row.android,channel:row.channel,method:row.method,registration:row.registration});
@@ -115,7 +168,7 @@ export function indexEvidence(jobId, sources) {
     const rootEntry=value.entries.find(row=>Array.isArray(row.chain)&&row.chain.length===0&&sha(row.sha256));
     const rootHash=rootEntry?.sha256?.toLowerCase();
     const scope=rootHash||jobId,containers=new Map();
-    value.containers.forEach((row,index)=>{
+    take(value.containers,12000).forEach((row,index)=>{
       if(!Array.isArray(row.chain)||row.chain.length>4)return;
       const id=add('artifact-container',[scope,row.chain],{chain:row.chain,containerKind:row.kind,entries:row.entries,coverage:row.coverage});
       containers.set(JSON.stringify(row.chain),id);
@@ -123,7 +176,7 @@ export function indexEvidence(jobId, sources) {
       if(parent)edge(parent,id,'contains-nested-container',citation(`/containers/${index}`),'reported-container-layout');
       if(row.chain.length===0&&rootHash){const root=add('artifact',rootHash,{sha256:rootHash,bytes:rootEntry.bytes});edge(root,id,'inspected-as-container',citation(`/containers/${index}`),'reported-container-layout');}
     });
-    value.entries.forEach((row,index)=>{
+    take(value.entries,12000).forEach((row,index)=>{
       if(!Array.isArray(row.chain)||row.chain.length>4)return;
       const member=add('container-member',[scope,row.chain],{chain:row.chain,name:row.chain.at(-1)||row.name,entryKind:row.kind,bytes:row.bytes,status:row.status,abi:row.abi});
       const parent=containers.get(JSON.stringify(row.chain.slice(0,-1)));
@@ -139,7 +192,7 @@ export function indexEvidence(jobId, sources) {
   for(const source of sources){
     const value=source.value;
     if(value?.kind!=='android-view-onclick-declarations'||!Array.isArray(value.events))continue;
-    value.events.slice(0,10000).forEach((row,index)=>{
+    take(value.events,10000).forEach((row,index)=>{
       const citation={jobId,file:source.file,jsonPointer:`/events/${index}`};
       const node=add('view-event-candidate',[jobId,row.layout,row.viewId,row.handler,row.candidateClass],{layout:row.layout,viewClass:row.viewClass,viewId:row.viewId,handler:row.handler,candidateClass:row.candidateClass,candidateSignature:row.candidateSignature,resolution:row.resolution});
       edge(run,node,'declares-view-handler',citation,'xml-declaration-candidate');
@@ -174,10 +227,11 @@ export async function evidence(context,args){
       if(signal.aborted)throw new Error('任务已取消');const job=await context.jobs.get(id),file=await context.paths.artifact(job.dir,'evidence.json');
       const size=(await fs.stat(file)).size;bytes+=size;if(size>16*1024*1024||bytes>64*1024*1024)throw new Error('证据合并超过读取预算');
       const graph=JSON.parse(await fs.readFile(file,'utf8'));partial ||= graph.partial;
-      for(const node of graph.nodes){if(nodes.size>=20000){partial=true;break;}nodes.set(node.id,node);}
+      for(const node of graph.nodes){if(nodes.size>=20000&&!nodes.has(node.id)){partial=true;continue;}const merged=mergeEvidenceNode(nodes.get(node.id),node);partial ||= merged.partial;nodes.set(node.id,merged.node);}
       for(const e of graph.edges){if(edges.size>=40000){partial=true;break;}edges.set(key(e),e);}
     }
     const graph={schema:1,nodes:[...nodes.values()],edges:[...edges.values()].filter(e=>nodes.has(e.from)&&nodes.has(e.to)),partial};
-    await fs.writeFile(path.join(dir,'graph.json'),JSON.stringify(graph,null,2));return {graph:'graph.json',nodes:nodes.size,edges:graph.edges.length,partial};
+    const serialized=JSON.stringify(graph,null,2);if(Buffer.byteLength(serialized)>32*1024*1024)throw new Error('合并证据报告超过32MiB');
+    await fs.writeFile(path.join(dir,'graph.json'),serialized);return {graph:'graph.json',nodes:nodes.size,edges:graph.edges.length,partial};
   });
 }

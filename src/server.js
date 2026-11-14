@@ -13,10 +13,10 @@ export function createServer(context) {
   const register = (name, description, schema, handler, readOnly = true) => {
     server.registerTool(name, { description, inputSchema: schema, annotations: { readOnlyHint: readOnly, destructiveHint: !readOnly, openWorldHint: false } }, async args => {
       try { const value = await handler(context, args); return { content: [{ type: 'text', text: JSON.stringify(value) }] }; }
-      catch (error) { return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: String(error.message || error).slice(0, 2400) }) }] }; }
+      catch (error) { return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: String(error.message || error).slice(0, 2400), ...(error.code ? { code: error.code } : {}), ...(error.code === 'java_compatibility_blocked' ? { compatibility: error.diagnostic } : {}) }) }] }; }
     });
   };
-  register('doctor', '检查本机 Android 依赖、允许目录和后端状态；不连接设备或启动 REA。', {}, actions.doctor);
+  register('doctor', '默认检查路径且不启动REA；deep=true返回任务，实际导入Frida binding、编译固定Java模板并握手REA。深度检查不连接设备。', { deep: z.boolean().default(false), timeoutSeconds: z.number().int().min(5).max(180).optional() }, actions.doctor);
   register('apk', 'APK ZIP/DEX/ABI 摘要、签名复验或 Manifest 摘要。返回任务；随后读 result.json。', { action: z.enum(['inspect', 'signature', 'manifest']), path: p }, actions.apk);
   register('decode', 'JADX/apktool 解包到独立任务目录；报告部分失败，不覆盖已有工程。', { path: p, engine: z.enum(['jadx', 'apktool', 'both']).default('both'), timeoutSeconds: z.number().int().min(10).max(600).optional() }, actions.decode, false);
   register('dex', '精确DEX类/方法/引用；kotlin读取原始metadata/suspend/inline/JVM签名、协程/Compose候选及JavascriptInterface声明。class/method可用mappingPath。', { action: z.enum(['classes', 'class', 'method', 'references', 'kotlin']), path: p, query: z.string().max(500).optional(), className: p.optional(), methodName: p.optional(), overloadIndex: z.number().int().min(0).optional(), mappingPath: p.optional() }, actions.dex);

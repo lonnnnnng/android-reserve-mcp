@@ -1,7 +1,13 @@
 import { withJavaFactory } from './java-loaders.js';
+import { javaCompatibility } from './java-compatibility.js';
 
 // long: 同一agent共用线程栈和JNI对象身份，异步回复只凭同一个Java对象关联，不按时间或类名猜测。
 export function startJavaGroupObserver(Java, config, env = globalThis) {
+  const compatibility = javaCompatibility({ ...config, action: 'trace-java-group' });
+  if (!compatibility.supported) {
+    try { env.send({ event: 'java-compatibility-blocked', ...compatibility }); } catch {}
+    return { stop() {} };
+  }
   const hooks = [], objects = [], active = new Map(), observing = new Set();
   let stopped = false, sequence = 0, invocation = 0, objectCounter = 0, captured = 0, budgetReported = false, identityHistoryLost = false, releaseLoader = () => {};
   const now = () => Date.now();

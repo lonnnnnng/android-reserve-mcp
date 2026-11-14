@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Backend } from './backend.js';
+import { withDeadline } from './deadline.js';
 
 export function unpack(result) {
   if (result.structuredContent) return result.structuredContent;
@@ -24,7 +25,15 @@ export class NativeTargets {
       if (signal?.aborted) throw new Error('任务已取消');
       entry.state = 'open'; entry.identity = unpack(output).result;
       return { targetId: id, target: entry.identity, backend: output };
-    } catch (error) { await backend.close().catch(() => {}); this.targets.delete(id); throw error; }
+    } catch (error) {
+      try { await backend.close(); this.targets.delete(id); }
+      catch (cleanup) {
+        entry.state = 'cleanup-unconfirmed';
+        error.message += '\nNative打开失败后的清理未确认，请close targetId=' + id;
+        error.diagnostic = { targetId: id, state: entry.state, error: error.message, cleanupError: cleanup.message };
+      }
+      throw error;
+    }
   }
   async use(id, operation) {
     const entry = this.targets.get(id);
@@ -38,17 +47,29 @@ export class NativeTargets {
     return task;
   }
   async closeTarget(id) {
+    const pending = this.targets.get(id);
+    if (pending?.state === 'cleanup-unconfirmed') {
+      await pending.backend.close(); this.targets.delete(id);
+      return { targetId: id, closed: true, cleanupOnly: true };
+    }
     return this.use(id, async entry => {
       const result = await entry.backend.call('close_binary', {});
-      entry.state = 'closed'; await entry.backend.close(); this.targets.delete(id);
+      entry.state = 'cleanup-unconfirmed'; await entry.backend.close(); this.targets.delete(id);
       return result;
     });
   }
-  async close() {
-    await Promise.allSettled([...this.targets.values()].map(async entry => {
-      await entry.tail;
-      try { await entry.backend.call('close_binary', {}); } finally { await entry.backend.close(); }
-    }));
-    this.targets.clear();
+  async close({ timeoutMs = 5000 } = {}) {
+    const targets = [...this.targets.values()];
+    const results = await Promise.allSettled(targets.map(entry => withDeadline(async signal => {
+      try { await entry.tail; await entry.backend.call('close_binary', {}, signal, { timeoutMs }); }
+      finally { await entry.backend.close(); }
+      this.targets.delete(entry.id);
+    }, { timeoutMs, label: 'Native目标退出' })));
+    const failed = results.find(result => result.status === 'rejected');
+    if (failed) {
+      // long: 串行队列不响应取消时仍关闭登记后端；不能把超时后未确认的target直接从所有权表抹掉。
+      await Promise.allSettled(targets.map(entry => withDeadline(() => entry.backend.close(), { timeoutMs, label: 'Native后端退出' })));
+      throw failed.reason;
+    }
   }
 }
