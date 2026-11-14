@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { run, checked, tool } from '../src/core/process.js';
+import { VERSION } from '../src/version.js';
 
 const cli = fileURLToPath(new URL('../src/cli.js', import.meta.url));
 
@@ -22,7 +23,7 @@ test('真实 stdio 握手、分组工具、APK/Manifest任务、分页及错误�
   try {
     await client.connect(transport);
     const list = await client.listTools(); assert.equal(list.tools.length, 20);
-    assert.equal(client.getServerVersion().version, '0.5.1');
+    assert.equal(client.getServerVersion().version, VERSION);
     const fridaSchema = list.tools.find(t => t.name === 'frida').inputSchema;
     for (const action of ['java-methods', 'java-loaders', 'trace-java', 'trace-jni', 'unload']) assert.ok(fridaSchema.properties.action.enum.includes(action));
     assert.ok(fridaSchema.properties.loaderSelector);

@@ -1,15 +1,23 @@
 # 验证记录
 
-日期：2026-11-14；候选版本0.5.1，v0.5.0记录见下；宿主macOS arm64。环境版本见ENVIRONMENT.md。
+日期：2026-11-14；宿主macOS arm64。以下分开记录本地`v0.5.1` tag快照、`0.5.2`发行候选及更早的`v0.5.0`历史；环境版本见ENVIRONMENT.md。
 
-## v0.5.1候选验证（未打tag）
+GitHub开源Compose、WebView、Flutter、React Native与Platform Samples的构建和真机结果见[样本验收记录](SAMPLE-VALIDATION.md)。其中WebView公网响应和RN HBC 99仍未通过，不能扩大为完整技术栈支持。
 
-- `npm run check`、39组自动测试、`check:pack`与`smoke:release`通过；实际0.5.1 tarball安装后stdio列20工具、doctor成功。
+## 本地 `v0.5.1` tag 快照验证
+
+- 从tag单独导出的干净快照中，`npm run check`、39组自动测试、`check:pack`与`smoke:release`通过；实际0.5.1 tarball安装后stdio列20工具、doctor成功。tag包清单51个源码/文档文件。
 - `npm run smoke:kotlin`使用真实Kotlin2.0.21 Compose plugin与runtime编译Compose函数到DEX；断言Composer签名、mutableStateOf、remember、MutableState读写和lambda invoke候选，并从持久evidence查询signal。仅证明编译调用引用，不代表运行态事件/重组。
 - `npm run smoke:static`、`smoke:packages`与`smoke:store`通过，含真实AAB/APKS分包和托管结构样本。source map、View/XML报告关系、Compose编译候选不会越过各自证据强度。
 - CDP重定向/失败/脚本和消息预算、ClassLoader唯一性拒绝测试通过。生产依赖审计0漏洞，actionlint通过；Linux远端CI尚未运行。
-- 当前源码/version/lock为0.5.1；最终tarball为`android-reserve-mcp-0.5.1.tgz`，51个源码/文档文件，SHA256 `095f0f8a34ea35f225e48b78c38658151ccffa79e62177c4e81f687925e0b6f4`，不含样本/引擎/签名材料。
-- 本地中文候选提交/tag已建立；旧`v0.5.0`tag未移动。GitHub/npm发布待确认仓库可见性和npm凭据，远端CI尚未运行。
+- tag版本包不含GitHub样本验收记录及tag之后的Native延迟模块改动；tarball不含样本/引擎/签名材料。
+
+## `0.5.2` 发行候选验证（相对 `v0.5.1` tag）
+
+- `npm test`：39项通过；`npm run check`、`npm run check:pack`、`npm run smoke:release`和`git diff --check`通过，包清单52个文件。
+- 此前在POCO F2 Pro Android 16/ARM64真机验收自有延迟加载`libdelayed.so`：spawn暂停时观察到等待模块，resume后hook安装并观测调用参数2/7、返回110；归档报告为`output/device-smoke/jni-report-prior-success-20261114.json`。本次发行前重跑在spawn阶段被REA以`capability_unavailable`拒绝，详情要求 jailed Android 配置 Gadget；见`output/device-smoke/jni-report.json`。本次没有进入Native hook步骤，不能记作复验通过。
+- GitHub样本构建及设备验收见[SAMPLE-VALIDATION.md](SAMPLE-VALIDATION.md)。Flutter Driver验证样本MethodChannel，不能单独证明MCP能恢复该桥接；WebView公网请求没有成功响应；RN HBC 99被当前分析器拒绝。
+- 仓库没有Git remote；GitHub仓库查询未成功，npm registry未认证查询返回404，GitHub/npm发行及远端CI不视为完成。
 
 ## v0.5.0首发tag历史验证
 
@@ -29,7 +37,7 @@
 - npm audit --omit=dev报告0漏洞。npm run check:pack通过；公开打包清单50个文件，仅源码/helper/docs/examples与许可，不含引擎、JAR/APK/DEX/SO、keystore、output或私有配置；曾发现helpers目录规则把Python .pyc缓存带进包，现改为明确源码扩展名并在CI加入check:pack防回归。GitHub Actions尚未运行，远端发布待完成。
 - OpenCode本地模拟API实际请求：android-reserve 33工具=本MCP20+辅助13，REA/IDA/JS/Playwright各0；daily仍13，Android0。未调用真实模型。配置已先备份，只同步Android提示词与维护说明。
 
-本轮没有Unity/Unreal/完整MAUI/Harmony真实产物；完整Compose/RN/Flutter platform channel、专用codec/snapshot与更多ABI/格式仍未验收。分项缺口见PROGRESS.md；参数/预算/依赖见ADVANCED-ANALYSIS.md。下文记录历史版本当时状态，不代表当前仍缺少已完成项。
+截至本次核对仍没有Unity/Unreal/完整MAUI/Harmony真实产物；Compose完整状态/事件语义、RN↔Native因果、MCP对Flutter channel的桥接恢复、专用codec/snapshot与更多ABI/格式仍未验收。Flutter官方样本的MethodChannel运行已通过，但不等于MCP恢复桥接。分项缺口见PROGRESS.md；参数/预算/依赖见ADVANCED-ANALYSIS.md。下文记录历史版本当时状态，不代表当前仍缺少已完成项。
 
 ## 0.4.0历史验证
 

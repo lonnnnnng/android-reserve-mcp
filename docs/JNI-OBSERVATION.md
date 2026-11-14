@@ -1,6 +1,6 @@
 # 动态JNI注册与隐藏函数观测
 
-适用0.5.0，核验日期2026-11-14。新增能力保留在`frida`分组中，服务当前20个工具入口，JNI动作仍在frida内；不需要安装新的外部引擎。依赖沿用Java bridge、编译器、REA设备binding和匹配server，见[完整环境](ENVIRONMENT.md)。
+适用0.5.0、0.5.1及0.5.2本地候选，核验日期2026-11-14。新增能力保留在`frida`分组中，服务当前20个工具入口，JNI动作仍在frida内；不需要安装新的外部引擎。依赖沿用Java bridge、编译器、REA设备binding和匹配server，见[完整环境](ENVIRONMENT.md)。
 
 ## 1. 能得到什么
 
@@ -71,5 +71,11 @@ JNI方法文本按modified UTF-8解码，记录NUL终止、不可读和截断状
 - 全部等待按当前script_id过滤历史消息，避免上一份脚本事件造成假通过；退出关闭会话并停自有App。
 
 报告在开发机`output/device-smoke/jni-report.json`，失败与无栈对照在`output/v040-research`。不包含在公开包中；更多Android/ABI/Gadget/CheckJNI变体仍须独立样本验收。
+
+## 5. 尚未加载的Native模块
+
+`trace-native`遇到目标模块尚未出现时先发`waiting-module`，随后每100毫秒检查一次；`moduleWaitMs`可设100–30000毫秒，默认30000毫秒。模块出现后才解析导出符号或RVA并安装hook；到期发`module-wait-timeout`。该等待不调用目标加载器，也不保证模块一定会加载。
+
+0.5.2候选在自有fixture中增加独立`libdelayed.so`：App启动后经`System.load`延迟加载，Native方法由该库的`JNI_OnLoad`注册。spawn保持暂停时先装`trace-native`，resume后必须依次看到`waiting-module`、`hook-installed`、`native-call`；设备验收捕获参数2/7、返回110。此验收覆盖POCO F2 Pro Android 16、Frida server 17.23.2和自有ARM64样本，不代表其他Android版本、ABI、加载器或目标应用均通过。结果与JNI回归共存于`output/device-smoke/jni-report.json`。
 
 依据：[JNI标准接口与索引](https://docs.oracle.com/en/java/javase/25/docs/specs/jni/functions.html#registering-native-methods)、[JNI线程/多函数表](https://docs.oracle.com/en/java/javase/25/docs/specs/jni/design.html#jni-interface-functions-and-pointers)、[Frida API](https://frida.re/docs/javascript-api/)，并以本机NDK28.2的jni.h和固定bridge7.0.13源码交叉核对。标准规范不是所有Android实现变体已通过的证据。

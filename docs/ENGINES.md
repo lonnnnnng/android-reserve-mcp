@@ -1,6 +1,6 @@
 # 引擎配置与新增能力使用
 
-适用0.5.0。所有引擎均按需使用；本MCP不自动安装、升级或清理外部工具。未配置的能力不会伪装为已就绪。完整依赖基线见ENVIRONMENT.md，三种新引擎的私有安装步骤见ENGINE-SETUP.md。
+适用0.5.2本地发行候选。所有引擎均按需使用；本MCP不自动安装、升级或清理外部工具。未配置的能力不会伪装为已就绪。完整依赖基线见ENVIRONMENT.md，三种新引擎的私有安装步骤见ENGINE-SETUP.md。
 
 ## 1. 产物索引和提取
 
@@ -96,7 +96,7 @@ Blutter可能自行下载并构建对应Dart，必须准备Python pyelftools/req
 {"tool":"frida","arguments":{"action":"trace-native","sessionId":"<本服务会话>","moduleName":"libfixture.so","symbolName":"Java_dev_androidreserve_fixture_MainActivity_nativeAdd","argumentOffset":2,"argumentCount":2,"maxEvents":20,"captureStack":true}}
 ```
 
-JNI普通方法前两个参数为JNI环境与对象/类，该示例明确跳过它们；其他函数须按其实际ABI配置。模块尚未加载时最多等待30秒，超时产生事件；不会无限轮询。加载任务成功仅说明脚本被接受，须在status中看到hook-installed和native-call才能确定实际观测成功；立即脚本错误会判任务失败。Native栈不等于完整Java/Kotlin调用栈。
+JNI普通方法前两个参数为JNI环境与对象/类，该示例明确跳过它们；其他函数须按其实际ABI配置。模块尚未加载时默认等待30秒，可通过`moduleWaitMs`设为100–30000毫秒；到期产生`module-wait-timeout`，不会无限轮询。加载任务成功仅说明脚本被接受，须在status中看到hook-installed和native-call才能确定实际观测成功；立即脚本错误会判任务失败。Native栈不等于完整Java/Kotlin调用栈。
 
 本机Frida17.23.2 raw script环境的`Java`为undefined；0.3.0新增的Java专项会显式打包bridge，普通`load`仍不自动提供Java。server/Gadget须与REA设备binding兼容。自有App的attach与spawn/load/resume及下述Java流程已在授权真机验证；测试server与App已停止，不在MCP启动时自动运行。
 

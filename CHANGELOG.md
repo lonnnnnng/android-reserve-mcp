@@ -1,12 +1,19 @@
 # 变更记录
 
-## 0.5.1 — 2026-11-14（候选，尚未发布）
+## 0.5.2 — 2026-11-14（本地发行候选，尚未公开发布）
+
+- `trace-native`新增有界等待尚未加载Native模块的参数；自有ARM64延迟库此前在真机通过等待、hook安装和函数调用验收。本次发行前重跑受REA Gadget能力条件阻塞，未能再次进入hook阶段。
+- 固定GitHub公开样本的上游commit与构建产物哈希，记录Compose、WebView、Flutter MethodChannel、RN/Hermes和Views/Compose的实际验收范围与失败边界。
+- 校准能力矩阵、发布状态和验证文档，区分本机tag、候选工作树、样本App交互与MCP桥接能力。
+- 当前工作树39项自动测试、语法检查、包清单与隔离tarball实装通过；逐项样本结论见`docs/SAMPLE-VALIDATION.md`和`docs/VALIDATION.md`。
+
+## 0.5.1 — 2026-11-14（本地tag，尚未公开发布）
 
 - evidence索引source map generated→original坐标及map SHA，标明构建匹配未知；inventory容器树映射为container/member/content节点，区分报告结构和SHA同一性。
 - 新增resources.view-events，有界扫描APK解码资源/解码目录中的XML `android:onClick`声明，输出待核验签名候选并拒绝DTD/entity。
 - Kotlin2.0.21 Compose plugin2.0.21/runtime1.8.0编译真实DEX，验证Composer、mutableStateOf、remember、MutableState读写和lambda方法内调用候选；不声称完整Compose状态/事件恢复。
 - 增加CDP重定向/失败/预算和ClassLoader拒绝/释放边界测试；39项测试、语法/包门、Compose/分包/静态smoke与隔离tarball实装通过。
-- 保留原`v0.5.0`候选tag；本版本候选仅在本地提交/tag，未推送/发布。
+- 保留原`v0.5.0`候选tag；`v0.5.1`只在本地提交/tag，未推送/公开发布。tag后增量转入`v0.5.2`候选。
 
 ## 0.5.0 — 2026-11-14（历史候选，已本地打tag）
 
@@ -21,7 +28,7 @@
 - 新依赖/调用/维护文档、OpenCode模式提示词与本地模拟请求验证；专有引擎不打包，不扩大未验收框架声明。
 - 修复npm目录白名单混入Python字节码缓存，明确helper源码扩展名，新增check:pack并接入CI。
 
-> tag `v0.5.0`创建后继续出现的未发布工作树增量：source map与容器树证据节点、View XML onClick候选、真实Compose编译签名smoke、CDP/ClassLoader失败边界回归。这些改动需在下一发行版本单独记录，不属于当前v0.5.0 tag。
+> `v0.5.0`创建后、`v0.5.1` tag前加入并由本地`v0.5.1`纳入的增量：source map与容器树证据节点、View XML onClick候选、真实Compose编译签名smoke、CDP/ClassLoader失败边界回归。这些内容不属于`v0.5.0` tag。
 
 ## 0.4.0 — 2026-11-14（本地，尚未发布）
 

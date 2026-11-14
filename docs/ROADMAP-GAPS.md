@@ -2,7 +2,7 @@
 
 日期：2026-11-13。基线：android-reserve-mcp 0.1.0、13个分组工具入口。
 
-本文记录已批准实施的0.1.0基线缺口，不是当前功能表。0.5.0的实际进展和仍未完成项以[PROGRESS.md](PROGRESS.md)为准，调用与环境见[ENGINES.md](ENGINES.md)。Java同调用、标准入口未来JNI注册/撤销与RVA，以及Blutter/ILSpy/GDRE所列样本现已完成；0.5.0另已完成所选分包一致性/聚合、AAB派生、Kotlin声明、自定义loader、WebView/CDP、store提取和有界证据索引；边界见ADVANCED-ANALYSIS.md。下文保留原评估基线，不要把当时的“未实现”或候选当成当前状态。
+本文记录已批准实施的0.1.0基线缺口，不是当前功能表。当前实际进展和剩余项以[PROGRESS.md](PROGRESS.md)为准（截至2026-11-14，本地0.5.1 tag及其后工作树分别说明），调用与环境见[ENGINES.md](ENGINES.md)。Java同调用、标准入口未来JNI注册/撤销与RVA，以及Blutter/ILSpy/GDRE所列样本现已完成；0.5.x另已完成所选分包一致性/聚合、AAB派生、Kotlin声明、自定义loader、WebView/CDP、store提取和有界证据索引；边界见ADVANCED-ANALYSIS.md。下文保留原评估基线，不要把当时的“未实现”或候选当成当前状态。
 
 ## 1. 目标如何验收
 

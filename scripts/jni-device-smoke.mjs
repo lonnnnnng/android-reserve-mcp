@@ -11,7 +11,7 @@ import { fixtureApp, packageName } from './fixture-app.mjs';
 const serial = process.argv[2];
 if (!serial || !/^[A-Za-z0-9._:-]+$/.test(serial) || serial.startsWith('-')) throw new Error('必须显式设备serial');
 const root = path.resolve('output/device-smoke'), workspace = path.join(root, 'jni-work');
-const apk = await fixtureApp(root, { dynamicJni: true });
+const apk = await fixtureApp(root, { dynamicJni: true, dynamicNative: true });
 const adb = async args => checked(await run(await tool('adb'), ['-s', serial, ...args], { timeoutMs: 60000 }), '自有样本设备操作');
 await adb(['get-state']); await adb(['install', '-r', apk]);
 const client = new Client({ name: 'jni-device-smoke', version: '0.4.0' });
@@ -61,7 +61,19 @@ try {
   let sessionId = unpack(await complete({ action: 'spawn', deviceId: serial, packageName })).session_id;
   const observer = await complete({ ...registration, sessionId });
   await until(sessionId, rows => rows.some(e => e.event === 'jni-observer-ready'), scriptId(observer));
+  const delayedObserver = await complete({ action: 'trace-native', sessionId, moduleName: 'libdelayed.so', symbolName: 'owned_delayed_add', argumentOffset: 2, argumentCount: 2, moduleWaitMs: 8000, maxEvents: 4 });
+  const delayedScriptId = scriptId(delayedObserver);
+  const waiting = await until(sessionId, rows => rows.some(e => e.event === 'waiting-module' && e.module === 'libdelayed.so'), delayedScriptId);
+  assert.ok(waiting.some(e => e.event === 'waiting-module'));
+  assert.ok(!waiting.some(e => e.event === 'hook-installed'), 'spawn暂停期间延迟模块尚未加载，不能提前安装hook');
   await complete({ action: 'resume', sessionId });
+  const delayedRows = await until(sessionId, rows => rows.some(e => e.event === 'hook-installed' && e.module === 'libdelayed.so') && rows.some(e => e.event === 'native-call' && e.module === 'libdelayed.so' && e.returnValue.int32 === 110), delayedScriptId);
+  const delayedHook = delayedRows.find(e => e.event === 'hook-installed' && e.module === 'libdelayed.so');
+  const delayedCall = delayedRows.find(e => e.event === 'native-call' && e.module === 'libdelayed.so' && e.returnValue.int32 === 110);
+  assert.ok(delayedRows.findIndex(e => e.event === 'waiting-module') < delayedRows.findIndex(e => e.event === 'hook-installed'));
+  assert.equal(delayedCall.arguments[0].int32, 2); assert.equal(delayedCall.arguments[1].int32, 7);
+  fixtureEvidence.push({ delayedNative: { observerScriptId: delayedScriptId, waiting: true, hookInstalled: true, module: delayedHook.module, symbol: delayedHook.symbol, arguments: delayedCall.arguments, returnValue: delayedCall.returnValue } });
+  await complete({ action: 'unload', sessionId, scriptId: delayedScriptId });
   const rows = await until(sessionId, list => list.some(e => e.event === 'jni-register-result' && e.outcome === 'success') && list.some(e => e.event === 'jni-register-result' && e.outcome === 'failure') && list.some(e => e.event === 'jni-unregister-result' && e.outcome === 'success'), scriptId(observer));
   const entry = rows.find(e => e.event === 'jni-register-enter' && e.methods?.some(m => m.name === 'dynamicAdd' && m.signature === '(II)I'));
   const method = entry.methods.find(m => m.name === 'dynamicAdd');
@@ -103,7 +115,7 @@ try {
   await complete({ action: 'unload', sessionId, scriptId: scriptId(attached) });
   await complete({ action: 'close', sessionId });
   passed = true;
-  console.log('真实JNI动态注册/失败/撤销、隐藏函数RVA、Java57/Native20关联、原异常保持与attach/spawn通过');
+  console.log('真实JNI动态注册/失败/撤销、延迟模块等待与hook、隐藏函数RVA、Java57/Native20关联、原异常保持与attach/spawn通过');
 } finally {
   await client.close(); await adb(['shell', 'am', 'force-stop', packageName]);
   await fs.writeFile(path.join(root, 'jni-report.json'), JSON.stringify({ passed, serial, packageName, results, captured, fixtureEvidence }, null, 2));

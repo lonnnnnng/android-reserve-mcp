@@ -1,9 +1,10 @@
 export function runtimeScript() {
   return "send({event:'runtime',fridaVersion:Frida.version,architecture:Process.arch,pid:Process.id,javaBridge:typeof Java,modules:Process.enumerateModules().slice(0,150).map(m=>({name:m.name,base:m.base.toString(),size:m.size}))});";
 }
-export function nativeTraceScript({ moduleName, symbolName, rva, argumentOffset = 0, argumentCount = 4, maxEvents = 50, captureStack = false }) {
+export function nativeTraceScript({ moduleName, symbolName, rva, argumentOffset = 0, argumentCount = 4, maxEvents = 50, captureStack = false, moduleWaitMs = 30000 }) {
   validateNativeHook({ moduleName, symbolName, rva });
-  const config = JSON.stringify({ moduleName, symbolName, rva, argumentOffset, argumentCount, maxEvents, captureStack });
+  if (!Number.isInteger(moduleWaitMs) || moduleWaitMs < 100 || moduleWaitMs > 30000) throw new Error('moduleWaitMs必须在100到30000毫秒之间');
+  const config = JSON.stringify({ moduleName, symbolName, rva, argumentOffset, argumentCount, maxEvents, captureStack, moduleWaitMs });
   // long: 只读寄存器参数/返回值，不解引用未知指针也不改返回值；符号通过JSON编码，不能注入生成的脚本。
   return `const config=${config}; const resolveNativeAddress=${resolveNativeAddress.toString()};let listener=null;let events=0;
 function install(module){
@@ -26,7 +27,7 @@ const current=Process.findModuleByName(config.moduleName);
 if(current)install(current);else{
  send({event:'waiting-module',module:config.moduleName});
  // long: 延迟到加载器回调之外安装hook，避免在模块初始化期间重入链接器；等待有明确上限。
- let attempts=0;const timer=setInterval(()=>{const module=Process.findModuleByName(config.moduleName);if(module){clearInterval(timer);install(module);}else if(++attempts>=300){clearInterval(timer);send({event:'module-wait-timeout',module:config.moduleName});}},100);
+ let attempts=0;const maxAttempts=Math.ceil(config.moduleWaitMs/100);const timer=setInterval(()=>{const module=Process.findModuleByName(config.moduleName);if(module){clearInterval(timer);install(module);}else if(++attempts>=maxAttempts){clearInterval(timer);send({event:'module-wait-timeout',module:config.moduleName,waitedMs:attempts*100});}},100);
 }`;
 }
 import { resolveNativeAddress } from '../../helpers/native-location.js';

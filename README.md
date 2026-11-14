@@ -2,7 +2,7 @@
 
 聚焦Android产物、DEX、JS、SO、资源和运行观测的MCP服务。使用本地CLI和静态解析器，复杂查询按需启动REA后端；对模型提供20个分组入口，避免加载整个通用逆向工具集。
 
-当前首发候选版本 `0.5.1`，npm/GitHub尚未发布。`v0.5.0`为此前候选tag，不含后续补强。发布前从源码启动；首发条件与完整待办见[首发待办](docs/FIRST-RELEASE-TODO.md)，当前交付与能力边界见[实施进展](docs/PROGRESS.md)。
+当前本地发行候选版本为 `0.5.2`，基于此前本地 `v0.5.1` tag 增补。核对日期为2026-11-14：当前未配置 Git remote，GitHub 仓库查询未成功，公开 npm registry 查询返回404，因此没有可见的 GitHub/npm 发布。发布条件与状态见[首发待办](docs/FIRST-RELEASE-TODO.md)，实现与验证边界见[实施进展](docs/PROGRESS.md)和[验证记录](docs/VALIDATION.md)。
 
 OpenCode 连接名和专用模式名均为 `android-reserve`，协议服务名与 npm 包名为 `android-reserve-mcp`。OpenCode 工具前缀为 `android-reserve_`。各类应用的覆盖范围见 [能力与限制](docs/CAPABILITIES.md)。
 
@@ -113,6 +113,7 @@ Java专项：默认先`java-methods`读取app loader的真实重载；自定义l
 - [实施进展](docs/PROGRESS.md)、[引擎说明](docs/ENGINES.md)：本批实际交付、可选环境和调用示例。
 - [维护手册](docs/MAINTENANCE.md)：OpenCode 模式、自定义、升级、发布准备。
 - [验证记录](docs/VALIDATION.md)：实测项目及未验证边界。
+- [GitHub样本验收](docs/SAMPLE-VALIDATION.md)：公开样本的固定commit、产物哈希、真机范围与失败边界。
 - [参考与许可](docs/REFERENCES.md)、[第三方说明](THIRD_PARTY_NOTICES.md)。
 
 ```zsh

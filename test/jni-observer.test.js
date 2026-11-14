@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { runInNewContext } from 'node:vm';
 import { decodeModifiedUtf8, readJniText, startJniObserver } from '../helpers/jni-observer.js';
 import { resolveNativeAddress } from '../helpers/native-location.js';
 import { validateNativeHook, nativeTraceScript } from '../src/core/frida-scripts.js';
@@ -71,4 +72,17 @@ test('Native RVA拒绝越界/数据地址和歧义选择，生成脚本不拼入
   assert.throws(() => resolveNativeAddress(f.module, { rva: '0x40' }, { Process: { findRangeByAddress: () => ({ protection: 'rw-' }) } }), /可执行/);
   for (const selection of [{ moduleName: 'a.so' }, { moduleName: 'a.so', rva: '0x40', symbolName: 'x' }, { moduleName: 'a.so', rva: '-1' }]) assert.throws(() => validateNativeHook(selection));
   assert.match(nativeTraceScript({ moduleName: 'a.so', rva: '0x40' }), /resolveNativeAddress/);
+  const delayed=nativeTraceScript({moduleName:'late.so',symbolName:'late_fn',moduleWaitMs:700});
+  assert.match(delayed,/config\.moduleWaitMs/);assert.match(delayed,/module-wait-timeout/);assert.match(delayed,/waitedMs:attempts\*100/);
+  assert.throws(()=>nativeTraceScript({moduleName:'late.so',symbolName:'late_fn',moduleWaitMs:50}),/moduleWaitMs/);
+  const timeoutEvents=[];let intervalCallback,clearedInterval;
+  runInNewContext(nativeTraceScript({moduleName:'late.so',symbolName:'late_fn',moduleWaitMs:300}),{
+    Process:{findModuleByName:()=>null},send:event=>timeoutEvents.push(event),
+    setInterval:(callback,period)=>{assert.equal(period,100);intervalCallback=callback;return 9;},
+    clearInterval:id=>{clearedInterval=id;}
+  });
+  intervalCallback();intervalCallback();intervalCallback();
+  assert.equal(timeoutEvents[0].event,'waiting-module');
+  assert.deepEqual(JSON.parse(JSON.stringify(timeoutEvents.at(-1))),{event:'module-wait-timeout',module:'late.so',waitedMs:300});
+  assert.equal(clearedInterval,9);
 });
