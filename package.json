@@ -54,6 +54,14 @@
   },
   "author": "long",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lonnnnnng/android-reserve-mcp.git"
+  },
+  "homepage": "https://github.com/lonnnnnng/android-reserve-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/lonnnnnng/android-reserve-mcp/issues"
+  },
   "overrides": {
     "frida": {
       "minimatch": "11.0.1"
