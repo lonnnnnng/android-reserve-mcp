@@ -2,15 +2,17 @@
 
 聚焦Android产物、DEX、JS、SO、资源和运行观测的MCP服务。使用本地CLI和静态解析器，复杂查询按需启动REA后端；对模型提供20个分组入口，避免加载整个通用逆向工具集。
 
-当前 GitHub Release 为 `v0.5.2`：[下载 Release](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.2)，源码仓库：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)。`0.5.2`尚未发布到 npm registry；可从 GitHub Release 下载 tarball，或按下方说明从源码运行。版本变更及验证边界见[变更记录](CHANGELOG.md)、[实施进展](docs/PROGRESS.md)和[验证记录](docs/VALIDATION.md)。
+已发布 GitHub/npm 版本为 `0.5.2`：[下载 Release](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.2)，源码仓库：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)。当前工作树新增的 Flutter channel 候选、HBC99实验反汇编、Compose位置证据与真实MAUI提取补强尚未发行，使用时从源码运行。确切验收与剩余缺口见[本轮进展](docs/CURRENT-INCREMENT.md)、[变更记录](CHANGELOG.md)。
 
 OpenCode 连接名和专用模式名均为 `android-reserve`，协议服务名与 npm 包名为 `android-reserve-mcp`。OpenCode 工具前缀为 `android-reserve_`。各类应用的覆盖范围见 [能力与限制](docs/CAPABILITIES.md)。
+
+当前重点是现有Android链路。Unity、Unreal、HarmonyOS NEXT自2026-11-14起暂缓，短期不再推进，也不作为发版门槛；历史研究与已有适配保留，恢复需另行安排。Godot不在此次暂缓范围。
 
 ## 先准备环境
 
 **完整能力依赖与安装检查见 [环境与工具依赖](docs/ENVIRONMENT.md)。** 最小启动需要 Node.js ≥26.12.1；APK 摘要需要 Python ≥3.11。完整静态分析还需要完整 JDK 17+、JADX CLI、apktool、Android SDK、ripgrep、LLVM readelf，以及 REA 6.9.0 和独立的 JADX headless MCP 0.7.1 JAR。动态分析还需要 Frida Node binding 和可连接的 Android 设备环境。
 
-发布后可通过`npm install android-reserve-mcp`安装CLI；首发前请按下方步骤从源码运行，或从Release候选tarball安装。npm/GitHub首次发布状态见[首发待办](docs/FIRST-RELEASE-TODO.md)。
+可通过`npm install android-reserve-mcp@0.5.2`安装已发布CLI；本机尚未发行的增量按下方源码方式运行。npm/GitHub首次发布状态见[首发待办](docs/FIRST-RELEASE-TODO.md)。
 
 JS分析依赖随npm安装，不需要浏览器。Native函数分析需要配置可用provider；本机已验证Ghidra12.2、macOS ARM64原生decompiler及独立JDK25。Hermes HBC84、Flutter/Dart3.11.5、ILSpy托管程序集、Godot4.3脚本字节码已有自有样本通过；这不等于完整RN/MAUI/游戏恢复。可选环境、固定参数和安装记录见 [引擎说明](docs/ENGINES.md)与[引擎安装](docs/ENGINE-SETUP.md)。
 

@@ -1,6 +1,8 @@
 # 首发与后续待办
 
-核对日期：2026-11-14。`v0.5.2`已发布到公开GitHub仓库，`v0.5.0`与`v0.5.1`旧tag保留。npm publish因`npm whoami` E401和registry publish E404未完成；GitHub Release与npm发布状态分别跟踪。
+核对日期：2026-11-14。GitHub/npm `0.5.2`均已发布并回验。当前工作树新进展和剩余验证条件见[本轮进展](CURRENT-INCREMENT.md)；下表保留首发历史。
+
+当前范围：Unity、Unreal、HarmonyOS NEXT已按用户决定暂缓，短期不推进；不作为当前迭代、发版门槛或阻塞项。历史表格中的样本条件仅供以后明确恢复时参考，Godot不在此次暂缓范围。
 
 ## 首发门槛
 
@@ -8,13 +10,13 @@
 | --- | --- | --- |
 | 已完成（tag快照） | 0.5.1本机质量门 | 从tag导出快照后，39项自动测试、语法检查、51文件包清单、tarball实装通过；静态/Compose/分包/store smoke有本地报告记录 |
 | 已完成（tag快照） | 0.5.1通用增量 | View onClick、source map/container evidence、真实Compose调用候选、CDP/loader拒绝路径已在tag中；能力边界见CAPABILITIES和VALIDATION |
-| 待处理 | npm包名/发布身份 | `npm whoami`返回401、`npm publish`返回404；需登录目标npm账号并确认包名权限后再发布及验证安装 |
+| 已完成 | npm发布与回验 | 用户发布0.5.2；本轮核对registry版本和SHA1与发行tarball一致 |
 | 已完成 | GitHub仓库/remote | 公开仓库`https://github.com/lonnnnnng/android-reserve-mcp`已创建并配置为origin |
 | 已完成 | 0.5.2提交/tag | 主分支与annotated tag `v0.5.2`已推送；保留`v0.5.1`旧tag |
 | 已完成（GitHub） | 首次公开发行 | GitHub Release已发布并为Latest；Ubuntu/macOS CI均成功，tarball与SHA-256资产下载回验通过 |
 | 发布后 | 客户端验证 | 重启OpenCode并检查`android-reserve`可见20个工具；现有配置保留，不改provider/API Key |
 
-首发不必等待每个Android框架专项全部完成。GitHub版`v0.5.2`已发布；待恢复npm账号认证后再完成registry发行。
+首发不必等待每个Android框架专项全部完成。GitHub/npm `0.5.2`均已发布；新能力另行定版，不能复用旧版本号发布。
 
 ## 可在当前环境继续完成
 
@@ -31,7 +33,7 @@
 
 这些事项不需要Unity/Unreal等外部样本；纳入公开发行前应更新版本说明并对最终快照重新验收。
 
-## 需要新样本或设备
+## 0.5.2发行时待办快照（新状态见CURRENT-INCREMENT）
 
 | 专项 | 待办 | 缺少的验证条件 |
 | --- | --- | --- |
@@ -63,20 +65,20 @@ GitHub上能找到可构建的源码工程，但仓库不一定附带已构建AP
 
 ## 需要跨平台CI环境
 
-- Linux：实际npm install/stdio、Python/JDK工具选择、原生依赖和tarball边界；当前CI工作流含Ubuntu job，但尚无远端运行结果。本机有Docker CLI但daemon未运行，不能在当前会话启动Linux容器验收。
+- Linux：实际npm install/stdio、Python/JDK工具选择、原生依赖和tarball边界；0.5.2的Ubuntu/macOS CI已成功，本轮源码以对应提交的CI结果为准。本机Docker daemon未运行，尚未做更多Linux真实引擎验收。
 - 其他macOS架构/Node小版本：Node最低版本约束与Frida预编译/构建兼容。
 - Windows：目前不是支持目标；若要纳入需先解决POSIX进程组取消、路径/工具发现、Android/REA/Frida依赖，再建立Windows CI。
 - 多Android API/厂商：WebView DevTools socket、`/proc`/root读取、PID代次和Frida server兼容组合。
 
-### 本机 tag 后改动
+### 当前源码与发行边界
 
-source map/evidence容器、View `android:onClick`声明与真实Compose编译smoke已经包含在本地`v0.5.1` tag；延迟Native模块等待/hook及本次状态审计文档还在tag后的工作树中。定版前核对[变更记录](../CHANGELOG.md)、PROGRESS和VALIDATION，确认新版本号并完成最终快照测试；不得覆盖或重复使用已有`v0.5.1` tag。
+GitHub/npm 0.5.2已发布。Flutter channel静态候选、HBC99实验反汇编、Compose位置证据、WebView公网验收及真实MAUI链为0.5.2 tag之后的源码增量，详情见[本轮进展](CURRENT-INCREMENT.md)。提交/推送源码不等于发布npm或Release；后续发版应使用新版本并完成最终快照检查，不覆盖既有tag或registry版本。
 
 ## 后续推荐顺序
 
-1. 审查并定版当前tag后工作树，明确首发使用已有`v0.5.1`tag还是纳入未提交改动后发布新版本；首发不等于全技术栈完成。
-2. 用本轮样本补主流应用链路：处理HBC 99的版本覆盖、取得成功的WebView公网响应，并补Compose交互和RN↔Native因果验收。
-3. 再取得MAUI/Unity/Unreal/Godot样本，分别做容器与引擎语义验收。
-4. Harmony NEXT独立安排SDK、设备与工具链，不并入普通Android验收。
+1. 保存并提交当前已验证源码与文档；需要发版时另行提升版本和执行发行流程。
+2. 深化现有Android链路：Flutter动态因果、Compose状态/事件、RN新架构关联、HBC正式兼容与WebView网络稳定性；已有的静态/实验/单次成功证据保持原边界。
+3. MAUI运行观测/AOT、KMP、Godot及其他专项按实际需求安排，不因Unity、Unreal、HarmonyOS NEXT暂缓而扩大发行阻塞范围。
+4. Unity、Unreal、HarmonyOS NEXT仅保留历史研究与恢复条件，短期不再主动推进。
 
 每个专项按README所定义的识别、提取、分析、关联、动态验证分别记录；仅能解包或工具启动不能标成该框架已支持。

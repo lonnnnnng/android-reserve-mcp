@@ -1,5 +1,7 @@
 # GitHub 开源样本构建与验收
 
+> 后续工作树复验已推进Flutter channel静态候选、HBC99实验反汇编、WebView公网200、Compose位置证据和真实MAUI样本。当前结论见[本轮进展](CURRENT-INCREMENT.md)，下表保留0.5.2发行时的样本快照，不应再视为当前缺口清单。
+
 日期：2026-11-14。样本源码均在 `/tmp/android-reserve-open-samples-20261114/` 的隔离目录检出并固定到下表 commit；没有把第三方源码或构建产物复制进本仓库。APK/AAR 哈希用于确认本轮实际分析的文件。临时目录不是发布资产，清理或系统重启后可能不可用；本文件保存可复核的来源、结论和哈希。
 
 动态验收目标为已授权 POCO F2 Pro，ADB serial `31936bb6`，Android 16。构建成功、MCP 静态检查、应用启动和真实功能交互分别记录，不互相代替。

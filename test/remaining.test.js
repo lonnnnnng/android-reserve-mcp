@@ -11,6 +11,10 @@ import { withJavaFactory } from '../helpers/java-loaders.js';
 import { run, tool } from '../src/core/process.js';
 
 const member = (split, options={}) => ({ source:split||'base',manifest:{package:'dev.owned.app',version_code:'7',version_code_major:'1',split,is_feature_split:!!split,uses_splits:[],...options},signature:{verified:true,certificates:['a'.repeat(64)]} });
+test('Flutter协议候选与Compose指令位置进入证据图，静态关系不冒充运行调用',()=>{
+  const graph=indexEvidence('owned',[{file:'result.json',value:{kind:'flutter-channel-candidates',partial:true,input:{sha256:'a'.repeat(64)},analysisJobId:'aot-job',matches:[{channel:'owned',method:'ping',dart:{source:{file:'asm/main.dart',line:3}},android:{source:{file:'smali/Owned.smali',line:8},handlerClass:'LOwned;',handlerMethod:'call()V'},registration:{setter:'b'}}]}},{file:'kotlin.json',artifactHash:'b'.repeat(64),value:{className:'Owned',composeSignals:[{jvmSignature:'render(Landroidx/compose/runtime/Composer;)V',signals:{'state-read-candidate':1},callsites:[{signal:'state-read-candidate',dexOffset:42,targetClass:'androidx.compose.runtime.State',targetSignature:'getValue()Ljava/lang/Object;',offsetUnit:'16-bit-code-unit'}]}]}}]);
+  assert.equal(graph.partial,true);assert.ok(graph.edges.some(e=>e.strength==='static-protocol-candidate-not-runtime'));assert.ok(graph.nodes.some(n=>n.kind==='compose-callsite-candidate'&&n.dexOffset===42));assert.equal(graph.nodes.filter(n=>n.kind==='runtime-call').length,0);
+});
 test('分包校验同时覆盖长版本/全部证书/缺base/依赖环，不把设备完整性当一致性',()=>{
   const valid=validatePackageSet([member(null),member('feature'),member('config.en',{is_feature_split:false,config_for_split:'feature'})]);assert.equal(valid.valid,true);assert.equal(valid.deviceCompleteness,'not-evaluated');
   assert.equal(validatePackageSet([member('feature')]).valid,false);

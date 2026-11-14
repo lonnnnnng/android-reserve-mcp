@@ -1,6 +1,16 @@
 # 变更记录
 
-## 0.5.2 — 2026-11-14（GitHub Release 已发布；npm 尚未发布）
+## 未发行 — 2026-11-14
+
+- framework.channels：同APK两份ARM64库哈希核对后，关联Blutter Dart调用模板、smali channel注册和handler方法名比较；始终标partial，不声称动态因果或完整数据流。
+- Hermes 97–99显式allowExperimental实验反汇编；真实RNTester HBC99产出非空汇编，保留上游警告，未知100继续拒绝。
+- WebView网络结果增加pending/finished/failed计数和ServiceWorker来源；官方天气样本取得公网200及454字节正文，重复验收仍有超时。
+- 修复Kotlin包过滤前无关类耗尽预算；Compose候选保留DEX偏移/目标签名并进入证据图。
+- 修复真实.NET Android ELF payload节及v3的9/13字节索引；MAUI10真实APK提取122程序集、配齐88引用后ILSpy恢复自有页面/函数。ILSpy显式referencePath与源码警告partial检测。
+- 整理当前能力、证据与后续待办；Unity、Unreal、HarmonyOS NEXT按用户决定短期暂缓，移出当前迭代及发版门槛，保留历史研究和已有适配。
+- 这些源码增量尚未发行到npm或GitHub Release；详细证据、复现与未完成项见docs/CURRENT-INCREMENT.md。
+
+## 0.5.2 — 2026-11-14（GitHub Release / npm 均已发布）
 
 - `trace-native`新增有界等待尚未加载Native模块的参数；自有ARM64延迟库此前在真机通过等待、hook安装和函数调用验收。本次发行前重跑受REA Gadget能力条件阻塞，未能再次进入hook阶段。
 - 固定GitHub公开样本的上游commit与构建产物哈希，记录Compose、WebView、Flutter MethodChannel、RN/Hermes和Views/Compose的实际验收范围与失败边界。

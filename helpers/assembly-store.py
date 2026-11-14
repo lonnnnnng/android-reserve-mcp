@@ -18,7 +18,7 @@ def checked_span(offset, size, limit):
 
 def elf_payload(data):
     if len(data) < 64 or data[:4] != b'\x7fELF' or data[5] != 1 or data[4] not in (1, 2):
-        raise ValueError('只支持可定位_assembly_store的小端ELF32/64')
+        raise ValueError('只支持可定位程序集载荷的小端ELF32/64')
     wide = data[4] == 2
     offset = struct.unpack_from('<Q' if wide else '<I', data, 40 if wide else 32)[0]
     stride, count = struct.unpack_from('<HH', data, 58 if wide else 46)
@@ -56,6 +56,26 @@ def elf_payload(data):
             if span > target[5] - delta:
                 raise ValueError('store符号超出节')
             checked_span(target[4] + delta, span, len(data)); matches.add((target[4] + delta, span))
+    if not matches:
+        # long: .NET Android真实Release包使用名为payload的非加载节；仅按节表定位，绝不扫magic猜偏移。
+        name_index = struct.unpack_from('<H', data, 62 if wide else 50)[0]
+        if name_index >= count or sections[name_index][1] != 3:
+            raise ValueError('ELF节名表无效')
+        names = sections[name_index]
+        checked_span(names[4], names[5], len(data))
+        payloads = []
+        for section in sections:
+            start = names[4] + section[0]
+            if section[0] >= names[5]:
+                raise ValueError('ELF节名称偏移越界')
+            if section[0] + 8 <= names[5] and data[start:start + 8] == b'payload\0':
+                if section[1] != 1 or section[2] & 4 or not 0 < section[5] <= 512 * 1024 * 1024:
+                    raise ValueError('ELF payload节类型/大小无效')
+                checked_span(section[4], section[5], len(data))
+                payloads.append((section[4], section[5]))
+        if len(payloads) != 1:
+            raise ValueError('必须有唯一_assembly_store符号或payload节')
+        return payloads[0]
     if len(matches) != 1:
         raise ValueError('必须有唯一_assembly_store有效符号')
     return next(iter(matches))
@@ -105,10 +125,14 @@ def parse_store(data, base, span):
         if version & ~0x800fffff or (version & 0x000f0000) not in (0x10000, 0x20000, 0x30000, 0x40000):
             raise ValueError('未知store ABI或版本标志')
         format_version = version & 0xffff
-        hash_bytes = 8 if format_version == 2 and version & 0x80000000 else 4
-        index_stride = hash_bytes + 4 + (1 if format_version == 3 else 0)
-        if indexes > 32768 or extra != indexes * index_stride:
+        # long: v3真实产物既有9字节CRC32索引也有13字节64位索引，按头部声明选择已知尺寸，不能只看ABI推断。
+        if indexes > 32768 or not indexes or extra % indexes:
             raise ValueError('store索引大小不一致或超预算')
+        index_stride = extra // indexes
+        allowed = (8, 12) if format_version == 2 else (9, 13)
+        if index_stride not in allowed:
+            raise ValueError('未核验的store索引条目大小')
+        hash_bytes = index_stride - 4 - (1 if format_version == 3 else 0)
         checked_span(20, extra + count * 28, span)
         active, seen = set(), set()
         for i in range(indexes):

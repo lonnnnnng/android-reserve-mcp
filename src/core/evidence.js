@@ -47,6 +47,10 @@ export function indexEvidence(jobId, sources) {
         const candidate=add('compose-signal-candidate',[method,signal],{className:value.className,signature:item.jvmSignature,signal,count});
         edge(method,candidate,'has-compiled-compose-signal',citation,'compiled-invoke-reference-candidate');
       }
+      for(const call of (item.callsites||[]).slice(0,2000))if(Number.isSafeInteger(call.dexOffset)&&call.dexOffset>=0&&typeof call.targetSignature==='string'){
+        const site=add('compose-callsite-candidate',[method,call.dexOffset,call.targetClass,call.targetSignature],{className:value.className,signature:item.jvmSignature,...call});
+        edge(method,site,'contains-compiled-callsite',citation,'dex-invoke-offset-candidate');
+      }
     }
     if(artifact&&Array.isArray(value.functions)&&!value.className){
       const location = row => ({ line:row.line,column:row.column,end:row.end });
@@ -59,6 +63,13 @@ export function indexEvidence(jobId, sources) {
   for(const source of sources){const hash=sha(source.artifactHash)?source.artifactHash.toLowerCase():null;const anchor=hash?add('artifact',hash,{sha256:hash}):null;walk(source.value,'',source.file,{},anchor);}
   for(const source of sources){
     const value=source.value,citation=(jsonPointer)=>({jobId,file:source.file,jsonPointer});
+    if(value?.kind==='flutter-channel-candidates')for(const [i,row] of (value.matches||[]).slice(0,10000).entries()){
+      const scope=sha(value.input?.sha256)?value.input.sha256:jobId;
+      const dart=add('flutter-dart-callsite-candidate',[scope,row.dart?.source,row.channel,row.method],{channel:row.channel,method:row.method,source:row.dart?.source,analysisJobId:value.analysisJobId});
+      const android=add('flutter-android-handler-candidate',[scope,row.android?.source,row.android?.handlerClass,row.android?.handlerMethod],{...row.android,channel:row.channel,method:row.method,registration:row.registration});
+      edge(run,dart,'reports-dart-callsite',citation('/matches/'+i+'/dart'),'aot-template-candidate');
+      edge(dart,android,'matches-static-channel-protocol',citation('/matches/'+i),'static-protocol-candidate-not-runtime');
+    }
     if(value?.kind==='source-map-position'&&sha(value.input?.sha256)&&value.generated&&value.original?.source){
       const generatedArtifact=add('artifact',value.input.sha256.toLowerCase(),{sha256:value.input.sha256.toLowerCase(),bytes:value.input.bytes});
       const mapHash=sha(value.map?.sha256)?value.map.sha256.toLowerCase():null;

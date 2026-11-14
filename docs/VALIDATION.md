@@ -2,7 +2,7 @@
 
 日期：2026-11-14；宿主macOS arm64。`v0.5.2`已通过GitHub Release发布；以下分开记录`v0.5.1` tag快照、`v0.5.2`发行验证及更早的`v0.5.0`历史；环境版本见ENVIRONMENT.md。
 
-GitHub开源Compose、WebView、Flutter、React Native与Platform Samples的构建和真机结果见[样本验收记录](SAMPLE-VALIDATION.md)。其中WebView公网响应和RN HBC 99仍未通过，不能扩大为完整技术栈支持。
+当前工作树的Flutter静态协议候选、WebView公网响应、HBC99实验反汇编、Compose位置证据和真实MAUI提取结果见[本轮进展](CURRENT-INCREMENT.md)。下文为发行历史；0.5.2中未通过的项不能据此推翻新证据，新证据也不扩大为全技术栈支持。
 
 ## 本地 `v0.5.1` tag 快照验证
 
@@ -18,7 +18,7 @@ GitHub开源Compose、WebView、Flutter、React Native与Platform Samples的构�
 - 此前在POCO F2 Pro Android 16/ARM64真机验收自有延迟加载`libdelayed.so`：spawn暂停时观察到等待模块，resume后hook安装并观测调用参数2/7、返回110；归档报告为`output/device-smoke/jni-report-prior-success-20261114.json`。本次发行前重跑在spawn阶段被REA以`capability_unavailable`拒绝，详情要求 jailed Android 配置 Gadget；见`output/device-smoke/jni-report.json`。本次没有进入Native hook步骤，不能记作复验通过。
 - GitHub样本构建及设备验收见[SAMPLE-VALIDATION.md](SAMPLE-VALIDATION.md)。Flutter Driver验证样本MethodChannel，不能单独证明MCP能恢复该桥接；WebView公网请求没有成功响应；RN HBC 99被当前分析器拒绝。
 - GitHub Release：https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.2；主分支和tag均回读到提交`1e99009a72cd0c23a823b9c12ae8d20091fa0f22`，两条CI均成功。Release tarball下载回验SHA-256为`556492d66d3f5c42d295d82d0c9242b30e9d9d2b083c43ca96268d2065df09f7`，Release标记为Latest、非草稿、非预发布。
-- npm发布未完成：`npm whoami`返回E401，`npm publish`返回E404；该失败不影响已发布的GitHub Release。发布前仍需恢复npm账号认证并确认包名权限。
+- npm初次发布失败；用户随后手工发布0.5.2，本轮registry回验version与SHA1一致。
 
 ## v0.5.0首发tag历史验证
 

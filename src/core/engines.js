@@ -3,10 +3,13 @@ import path from 'node:path';
 import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { locate, run, checked, tool } from './process.js';
 
+const channelsHelper = fileURLToPath(new URL('../../helpers/flutter-channels.py', import.meta.url));
+
 const DEFINITIONS = {
-  hermes: { variable: 'ANDROID_RESERVE_HBC_DISASSEMBLER', command: 'hbc-disassembler', probe: ['--help'], outputKind: 'hermes-disassembly', description: 'HBC反汇编；当前适配只接受72–96版本，非JS源码恢复' },
+  hermes: { variable: 'ANDROID_RESERVE_HBC_DISASSEMBLER', command: 'hbc-disassembler', probe: ['--help'], outputKind: 'hermes-disassembly', description: 'HBC72–96反汇编；97–99需allowExperimental=true并保留partial和上游警告；拒绝100及未知版本，非JS源码恢复' },
   flutter: { variable: 'ANDROID_RESERVE_BLUTTER', probe: ['--help'], outputKind: 'dart-aot-observations', description: 'Blutter Python入口；Android ARM64配对库，运行可能下载/编译Dart' },
   ilspy: { variable: 'ANDROID_RESERVE_ILSPY', command: 'ilspycmd', probe: ['--version'], outputKind: 'managed-il-decompilation', description: '已提取托管PE程序集；不自动解析MAUI assembly store或NativeAOT' },
   godot: { variable: 'ANDROID_RESERVE_GDRE', command: 'gdre_tools', probe: ['--headless', '--gdre-version'], outputKind: 'godot-resource-script-recovery', description: 'GDRETools恢复；版本/加密/自定义字节码由引擎检查' },
@@ -27,7 +30,7 @@ async function selected(name) {
 }
 
 export async function engineCatalog() {
-  return { engines: await Promise.all(Object.keys(DEFINITIONS).map(selected)), notImplemented: ['lynx-codec', 'nativescript-snapshot', 'maui-assembly-store', 'unity-assets', 'unreal-assets'], note: '有固定参数适配器不等于已安装或验证目标；不自动安装引擎' };
+  return { engines: await Promise.all(Object.keys(DEFINITIONS).map(selected)), notImplemented: ['lynx-codec', 'nativescript-snapshot', 'maui-aot-runtime-correlation', 'unity-assets', 'unreal-assets'], note: '有固定参数适配器不等于已安装或验证目标；不自动安装引擎' };
 }
 
 async function identity(file, signal) {
@@ -93,6 +96,7 @@ async function outputFiles(base) {
 
 export async function framework(context, args) {
   if (args.action === 'engines') return engineCatalog();
+  if (args.action === 'channels') return flutterChannels(context, args);
   const engine = await selected(args.engine);
   const exec = await invocation(engine);
   if (args.action === 'probe') return context.jobs.start(`探测${args.engine}`, async signal => {
@@ -107,9 +111,12 @@ export async function framework(context, args) {
   const isDirectory = args.engine === 'flutter';
   const input = await context.paths.input(args.path, { directory: isDirectory });
   const metadata = args.metadataPath ? await context.paths.input(args.metadataPath) : null;
+  if (args.referencePath && args.engine !== 'ilspy') throw new Error('referencePath仅用于ILSpy');
+  const referencePath = args.referencePath ? await context.paths.input(args.referencePath, { directory: true }) : null;
   return context.jobs.start(`${args.engine}分析`, async (signal, dir) => {
     const out = path.join(dir, 'output'); await fs.mkdir(out);
-    let parameters, inputIdentity;
+    let parameters, inputIdentity, bytecodeVersion;
+    const references = [];
     if (args.engine === 'flutter') {
       if (!args.allowEngineBuild) throw new Error('Blutter分析可能联网下载/编译Dart，需显式allowEngineBuild=true；引擎目录应独立可写');
       const libraries = [];
@@ -125,13 +132,33 @@ export async function framework(context, args) {
       const bytes = await header(input);
       if (bytes.length < 12 || bytes.readBigUInt64LE(0) !== 0x1f1903c103bc1fc6n) throw new Error('不是普通Hermes HBC，delta或JS文本须另行分析');
       const version = bytes.readUInt32LE(8);
-      if (version < 72 || version > 96) throw new Error(`HBC ${version}超出当前已声明适配范围72–96；不强制套用未知opcode`);
+      if (version < 72 || version > 99) throw new Error(`HBC ${version}超出适配范围72–99；拒绝用最高已知opcode解析未知版本`);
+      // long: 上游虽有97–99格式表仍明确警告未正式支持；显式选择实验模式，不能静默提升为完整兼容。
+      if (version > 96 && args.allowExperimental !== true) throw new Error(`HBC ${version}仅提供实验反汇编，需allowExperimental=true；debug元数据等仍有已知限制`);
+      bytecodeVersion = version;
       parameters = [input, path.join(out, 'disassembly.hasm')];
     } else if (args.engine === 'ilspy') {
       const bytes = await header(input), pe = bytes.length >= 64 ? bytes.readUInt32LE(60) : -1;
       const opt = pe + 24, directory = opt >= 24 && opt + 2 < bytes.length && bytes.readUInt16LE(opt) === 0x20b ? 112 : 96;
       if (bytes.subarray(0, 2).toString() !== 'MZ' || pe < 0 || opt + directory + 120 > bytes.length || bytes.subarray(pe, pe + 4).toString() !== 'PE\0\0' || bytes.readUInt32LE(opt + directory + 112) === 0) throw new Error('输入不是具有CLI目录的托管PE；MAUI store需先提取，NativeAOT不能按IL恢复');
       parameters = ['--disable-updatecheck', '-p', '-o', out, input];
+      if (referencePath) {
+        const directory = path.join(dir, 'references'); await fs.mkdir(directory);
+        const entries = await fs.readdir(referencePath, { withFileTypes: true });
+        if (entries.length > 4096) throw new Error('ILSpy引用目录超过4096项');
+        let bytes = 0;
+        for (const entry of entries.filter(row => row.name.endsWith('.dll'))) {
+          if (!entry.isFile() || entry.isSymbolicLink()) throw new Error('ILSpy引用必须为普通DLL文件');
+          const file = await context.paths.input(path.join(referencePath, entry.name));
+          const size = (await fs.stat(file)).size; bytes += size;
+          if (size > 128 * 1024 * 1024 || bytes > 512 * 1024 * 1024) throw new Error('ILSpy引用超过单项128MiB/累计512MiB预算');
+          const snapshot = path.join(directory, entry.name); await fs.copyFile(file, snapshot);
+          references.push({ ...await identity(snapshot, signal), path: entry.name });
+        }
+        if (!references.length) throw new Error('ILSpy引用目录没有DLL');
+        // long: 引用只取显式目录并复制到任务快照，避免依赖目标运行时或在分析期间变化。
+        parameters.push('--referencepath', directory);
+      }
     } else if (args.engine === 'godot') parameters = ['--headless', '--recover=' + input, '--output=' + out];
     else if (args.engine === 'il2cpp') {
       if (!metadata) throw new Error('IL2CPP要求metadataPath');
@@ -161,6 +188,60 @@ export async function framework(context, args) {
       if (!/^config_version\s*=\s*\d+/m.test(project) || !nonempty(p => p !== 'project.godot' && !/\.(?:log|json|md|txt|import|remap)$/i.test(p))) throw new Error('GDRE缺少有效project.godot或实际恢复的脚本/资源');
     }
     if (args.engine === 'il2cpp' && !produced.files.some(f => f.path === 'dump.cs' || f.path.startsWith('DummyDll' + path.sep))) throw new Error('未产生IL2CPP类型声明；查看engine.log是否进入手动模式或抛错');
-    return { engine: args.engine, outputKind: engine.outputKind, engineIdentity: await identity(engine.executable, signal), input: inputIdentity || await identity(input, signal), metadata: metadata ? await identity(metadata, signal) : null, output: 'output', ...produced, process: { code: result.code, truncated: result.truncated }, limitation: engine.description };
+    const decompilationWarnings = []; let sourceBytes = 0;
+    if (args.engine === 'ilspy') for (const file of produced.files.filter(row => row.path.endsWith('.cs'))) {
+      sourceBytes += file.bytes;
+      if (sourceBytes > 16 * 1024 * 1024 || file.bytes > 2 * 1024 * 1024) { decompilationWarnings.push({ file: file.path, reason: 'source-warning-scan-budget' }); break; }
+      const lines = (await fs.readFile(path.join(out, file.path), 'utf8')).split('\n');
+      // long: ILSpy会退出0但将缺引用/坏IL写入源码注释；不能把这种项目当作完整反编译成功。
+      for (const [i, line] of lines.entries()) if (/^\s*\/\/.*(?:Unknown result type|Expected .*got|Invalid IL|Error decoding|Could not resolve)/i.test(line)) {
+        decompilationWarnings.push({ file: file.path, line: i + 1, reason: line.trim().slice(0, 500) });
+        if (decompilationWarnings.length >= 100) break;
+      }
+      if (decompilationWarnings.length >= 100) break;
+    }
+    const experimental = bytecodeVersion > 96;
+    const warnings = (result.stdout+'\n'+result.stderr).split('\n').filter(line => /warning|not formally supported|not supported|todo/i.test(line)).slice(0,20).map(line=>line.slice(0,1000));
+    return { engine: args.engine, outputKind: engine.outputKind, engineIdentity: await identity(engine.executable, signal), input: inputIdentity || await identity(input, signal), metadata: metadata ? await identity(metadata, signal) : null, ...(referencePath ? { references } : {}), output: 'output', ...produced, partial: produced.partial || result.truncated || experimental || decompilationWarnings.length > 0, ...(decompilationWarnings.length ? { decompilationWarnings } : {}), ...(bytecodeVersion === undefined ? {} : { bytecodeVersion, compatibility: experimental ? 'experimental-disassembly-debug-metadata-unverified' : 'declared-range-not-all-versions-tested', warnings }), process: { code: result.code, truncated: result.truncated }, limitation: engine.description };
+  });
+}
+
+async function flutterChannels(context, args) {
+  if (args.engine !== 'flutter' || !args.analysisJobId) throw new Error('channels要求engine=flutter与本工作区的analysisJobId');
+  const input = await context.paths.input(args.path);
+  const mapping = args.mappingPath ? await context.paths.input(args.mappingPath) : null;
+  const source = await context.jobs.get(args.analysisJobId);
+  if (!['succeeded', 'partial'].includes(source.state)) throw new Error('Blutter来源任务尚未完成');
+  const reportPath = await context.paths.artifact(source.dir, 'result.json');
+  if ((await fs.stat(reportPath)).size > 2 * 1024 * 1024) throw new Error('Blutter来源报告超过2MiB');
+  const previous = JSON.parse(await fs.readFile(reportPath, 'utf8'));
+  if (previous.engine !== 'flutter' || !Array.isArray(previous.input?.libraries)) throw new Error('来源任务不是配对库Blutter分析');
+  // long: 复用反汇编必须先核对APK内两份库，防止把另一版本的Dart常量拼到当前DEX。
+  const out = await context.paths.input(path.join(source.dir, 'output'), { directory: true });
+  return context.jobs.start('Flutter channel静态候选', async (signal, dir) => {
+    if ((await fs.stat(input)).size > 1024 * 1024 * 1024) throw new Error('Flutter APK超过1GiB');
+    const snapshot = path.join(dir, 'input.apk'); await fs.copyFile(input, snapshot);
+    let mappingSnapshot;
+    if (mapping) {
+      if ((await fs.stat(mapping)).size > 16 * 1024 * 1024) throw new Error('mapping超过16MiB');
+      mappingSnapshot = path.join(dir, 'mapping.txt'); await fs.copyFile(mapping, mappingSnapshot);
+    }
+    const python = await tool('python3');
+    const inspect = checked(await run(python, [channelsHelper, 'identity', snapshot], { signal }), 'Flutter APK身份');
+    if (inspect.truncated) throw new Error('Flutter APK身份报告超预算');
+    const apk = JSON.parse(inspect.stdout);
+    for (const library of apk.libraries) {
+      const prior = previous.input.libraries.filter(row => path.basename(row.path || '') === library.name);
+      if (prior.length !== 1 || prior[0].sha256 !== library.sha256 || prior[0].bytes !== library.bytes) throw new Error('APK与Blutter配对库不匹配：' + library.name);
+    }
+    const decoded = path.join(dir, 'decoded');
+    const stage = await run(await tool('apktool'), ['d', '--no-res', snapshot, '-o', decoded], { signal, timeoutMs: 300000 });
+    await fs.writeFile(path.join(dir, 'apktool.log'), stage.stdout + '\n' + stage.stderr);
+    checked(stage, 'Flutter DEX反汇编');
+    const parsed = checked(await run(python, [channelsHelper, 'analyze', out, decoded, ...(mappingSnapshot ? [mappingSnapshot] : [])], { signal, timeoutMs: 120000, maxBytes: 2 * 1024 * 1024 }), 'Flutter channel候选');
+    if (parsed.truncated) throw new Error('Flutter channel报告超过2MiB');
+    const report = { ...JSON.parse(parsed.stdout), input: { ...await identity(snapshot, signal), path: input }, apk, analysisJobId: source.id, aotSources: { jobId: source.id, directory: 'output' } };
+    await fs.writeFile(path.join(dir, 'flutter-channels.json'), JSON.stringify(report, null, 2));
+    return { ...report, report: 'flutter-channels.json' };
   });
 }

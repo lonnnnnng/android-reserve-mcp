@@ -99,11 +99,11 @@ Network只捕获启用之后事件，默认遮蔽Authorization/Cookie/API-Key/To
 {"tool":"managed","arguments":{"action":"extract","path":"/absolute/path/assemblies.blob"}}
 ```
 
-支持固定布局store v1、v2（32/64位hash）、v3，raw store与有唯一_assembly_store节符号的ELF32/64封装；XALZ按LZ4 raw block、XAZS按Zstd解压。未核验版本、未知flags、越界、非相同重叠和路径异常明确拒绝，不执行ELF，不扫描magic猜载荷位置。
+支持store v1、v2（32/64位hash）、v3（9/13字节索引）；raw store及唯一_assembly_store符号或唯一payload节的ELF32/64封装。payload为未发行增量，见CURRENT-INCREMENT.md。XALZ按LZ4 raw block、XAZS按Zstd解压。未知版本/flags、越界、非相同重叠和路径异常拒绝，不执行ELF，不扫描magic猜载荷。
 
 输出assemblies/assembly-NNNN.dll或.bin，记录原name/index/offset/codec/哈希。MZ只是PE候选，提取后用framework.ilspy作严格PE/CLI分析；native AOT不能按IL反编译。预算：输入512MiB、4096 descriptor、ELF累计200000符号、单程序集128MiB、累计解压512MiB（先预留再解压）。相同区间哈希复用，不能用重复引用放大inspect工作量。
 
-依赖：Python标准库支持inspect/无压缩提取；LZ4/Zstd提取另需独立环境的lz4==4.4.5、zstandard==0.25.0。自有DLL封装v1/v2/v3与ELF的结构样本已验证提取SHA逐字一致，并接ILSpy；不冒充真实完整MAUI APK或runtime索引兼容验收。
+依赖：Python标准库支持inspect/无压缩提取；LZ4/Zstd需独立环境lz4==4.4.5、zstandard==0.25.0。结构样本SHA回归通过；工作树还验收真实MAUI10 APK的122程序集提取和88引用ILSpy恢复。ILSpy可传referencePath显式顶层DLL目录，快照留SHA；源码诊断令结果partial。不扩大到其他runtime/AOT。
 
 ## 持久证据图
 

@@ -18,6 +18,7 @@ test('WebView固定CDP操作真实走WebSocket，采集DOM/脚本/正文并遮�
     const opened=await wait(c,await webview(c,{action:'open',serial:'owned-device',packageName:'dev.owned.app',pid:42}));assert.equal(opened.job.state,'succeeded',opened.job.error);const sessionId=opened.result.sessionId;
     for(const [action,extra,marker]of[['dom',{},'OWNED_DOM'],['source',{scriptId:'1'},'OWNED_SCRIPT'],['body',{requestId:'r'},'OWNED_BODY']]){const result=await wait(c,await webview(c,{action,sessionId,...extra}));assert.equal(result.job.state,'succeeded',result.job.error);assert.match(await fs.readFile(path.join(result.job.dir,result.result.artifact),'utf8'),new RegExp(marker));}
     const network=await wait(c,await webview(c,{action:'network',sessionId}));assert.equal(network.result.requests[0].headers.Authorization,'<redacted>');assert.equal(network.result.requests[0].response.headers['set-cookie'],'<redacted>');
+    assert.deepEqual(network.result.states,{pending:0,finished:1,failed:0});
     const controller=new AbortController(),entry=await c.webviews.use(sessionId);const pending=entry.cdp.call('Owned.neverReply',{},controller.signal);controller.abort();await assert.rejects(pending,/取消/);
     await c.webviews.close(sessionId);assert.equal(f.forward,false);assert.equal(c.webviews.entries.size,0);assert.ok(f.received.includes('Network.getResponseBody'));
   }finally{await c.close();await f.close();}

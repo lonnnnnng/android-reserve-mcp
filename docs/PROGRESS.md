@@ -1,6 +1,6 @@
 # 实施进展
 
-截至2026-11-14，`v0.5.2`已发布到公开GitHub仓库并标记Latest；`v0.5.0`、`v0.5.1`旧tag保持不变。npm registry发布未成功（`npm publish`返回E404，`npm whoami`返回E401），因此目前仅有GitHub Release。已用自有fixture及GitHub官方样本推进主流Android链路；完整技术栈路线图仍未全部完成。用户暂无Unity/Unreal/MAUI/Harmony真实产物，不把结构夹具当完整引擎App验收。
+截至2026-11-14，GitHub/npm `0.5.2`均已发布。当前工作树新增Flutter静态协议候选、HBC99实验反汇编、WebView公网响应验收、Compose位置证据和真实MAUI store提取；这些增量尚未发行，确切证据与仍未完成项以[本轮进展](CURRENT-INCREMENT.md)为准。下文保留0.5.2发行时快照，不能替代最新增量状态。
 
 ## 本批已落地
 
@@ -39,21 +39,24 @@
 
 Java/APK/资源/重建签名、mapping、JS AST/source map、独占Native target/Ghidra函数分析、Hermes HBC84、Flutter3.41.9/Dart3.11.5 Blutter、ILSpy/.NET10、Godot4.3/GDRE，以及动态JNI未来注册/撤销、RVA Native与Java同调用关联。历史真实验收范围见VALIDATION.md，不能据此扩大到全部版本。
 
-## 仍未完成
+## 当前仍未完成（含工作树增量）
 
 | 范围 | 剩余工作 | 本轮可复用内容 |
 | --- | --- | --- |
 | View/Compose/KMP | 完整布局/状态/事件/导航语义、XML onClick的DEX落点、KMP klib及其他target/commonMain专项 | JetNews导航、真实Compose编译候选、DEX/metadata/资源/运行观测 |
-| RN/Hermes | HBC 99当前明确拒绝；仍需更多受支持/新版本覆盖、JSI/Fabric/TurboModules与异步跨层关系 | HBC84、RNTester HBC99与source map样本、JS/Native/Java通用层 |
-| Flutter | MCP对Dart↔Android channel的静态/动态关联、更多Dart/ABI、EventChannel运行态和debug VM service专项 | 已验收ARM64 AOT；官方MethodChannel Driver只验证样本App交互，不证明MCP已恢复该桥接 |
+| RN/Hermes | HBC99已有显式实验反汇编；仍需正式兼容与更多版本覆盖、JSI/Fabric/TurboModules与异步跨层关系 | HBC84、RNTester HBC99与source map样本、JS/Native/Java通用层 |
+| Flutter | 完整Dart↔Android数据流与动态因果、更多Dart/ABI、EventChannel运行态和debug VM service专项 | ARM64 AOT与同APK静态协议候选；Driver只证明样本App交互，非MCP动态关联 |
 | Lynx/NativeScript | 专用codec/snapshot格式、版本路由、完整桥接 | 容器/JS/DEX/Native |
-| Web混合/PWA/TWA | 框架插件注册与完整路由、成功的公网WebView响应、SW/cache、系统浏览器独立上下文 | 已开放WebView/CDP、静态注解、已知Java桥接重载；官方样本仅观察到请求，设备fetch失败 |
+| Web混合/PWA/TWA | 框架插件注册与完整路由、公网网络稳定性、SW/cache、系统浏览器独立上下文 | 已开放WebView/CDP、静态注解、已知Java桥接重载；官方样本单次公网200/正文通过，复验有pending超时 |
 | JNI/loader | 全部JNI表/ABI/CheckJNI、完整当前绑定快照、未知loader、异步传播 | 标准入口未来事件、RVA、BaseDex唯一selector |
-| MAUI | 真实完整MAUI APK、多runtime索引/布局、AOT地址/元数据关联 | store结构提取、ILSpy |
-| Unity/Unreal/Godot | IL2CPP引擎真实安装/产物验收、Unity资源、Pak/IoStore/Blueprint、更多Godot版本/C#资源图 | Native/托管通用层、已验收Godot4.3 GDScript |
-| HarmonyOS NEXT | 具体SDK/ABC/资源/签名、ArkUI和鸿蒙设备链 | 有界容器/任务/provider抽象；当前Ark仅适配未实测 |
-| 工程完整性 | 更全面格式/版本矩阵、深度doctor、Linux完整验收、公开发布 | 当前路径级doctor、固定依赖和自有样本 |
+| MAUI | 更多真实MAUI APK、多runtime索引/布局、AOT地址/元数据关联 | 真实MAUI10 APK→122程序集→88引用ILSpy，同包真机按钮返回46 |
+| Godot | 更多Godot版本/C#资源图 | 已验收Godot4.3 GDScript；不在本次暂缓范围 |
+| 工程完整性 | 更全面格式/版本矩阵、深度doctor、更多Linux真实引擎验收 | 当前路径级doctor、固定依赖和自有样本 |
 
 实际使用、依赖与预算见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)、[ENVIRONMENT.md](ENVIRONMENT.md)。原始全路线评估保留在ROADMAP-GAPS.md；未完成项不通过改名或增加工具定义算完成。
 
-本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`v0.5.2`通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。GitHub Actions的Ubuntu/macOS任务均成功。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。GitHub Release已发布；npm发布待恢复账号认证。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。
+## 暂缓方向（2026-11-14）
+
+Unity、Unreal、HarmonyOS NEXT按用户决定短期不再推进，移出当前迭代及发版门槛。历史缺口、已有通用能力与IL2CPP/Ark适配保留，不标为已完成；恢复需用户明确安排，条件见[本轮进展](CURRENT-INCREMENT.md)。Godot与其他Android方向不受此调整影响。
+
+本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`v0.5.2`通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。GitHub Actions的Ubuntu/macOS任务均成功。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。GitHub Release/npm 0.5.2均已发布；本轮增量未发行。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。

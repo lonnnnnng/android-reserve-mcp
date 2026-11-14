@@ -55,7 +55,7 @@ export class Cdp {
     }
     const record = this.requests.get(p.requestId);
     if (!record) return;
-    if (method === 'Network.responseReceived') record.response = { status: p.response?.status, mimeType: p.response?.mimeType, headers: headers(p.response?.headers), fromDiskCache: p.response?.fromDiskCache, protocol: p.response?.protocol };
+    if (method === 'Network.responseReceived') record.response = { status: p.response?.status, mimeType: p.response?.mimeType, headers: headers(p.response?.headers), fromDiskCache: p.response?.fromDiskCache, fromServiceWorker: p.response?.fromServiceWorker, protocol: p.response?.protocol };
     if (method === 'Network.loadingFinished') { record.finished = true; record.encodedDataLength = p.encodedDataLength; }
     if (method === 'Network.loadingFailed') record.failure = { errorText: p.errorText, canceled: p.canceled };
   }
@@ -164,7 +164,13 @@ export async function webview(context, args) {
     if (args.action === 'close') { if (!args.sessionId) throw new Error('close必须明确sessionId'); await context.webviews.close(args.sessionId); return { closed: true }; }
     const entry = await context.webviews.use(args.sessionId, signal), cdp = entry.cdp;
     if (args.action === 'scripts') return { scripts: [...cdp.scripts.values()], partial: cdp.partial };
-    if (args.action === 'network') return { requests: [...cdp.requests.values()], partial: cdp.partial, captureClosed: cdp.closed, closeReason: cdp.closeReason, coverage: 'events-after-network-enable', sensitiveHeaders: 'redacted' };
+    if (args.action === 'network') {
+      const requests = [...cdp.requests.values()];
+      // long: 捕获未截断不等于请求已成功；单列终态数量，避免把空列表或pending当网络验收通过。
+      const states = { pending: 0, finished: 0, failed: 0 };
+      for (const row of requests) states[row.failure ? 'failed' : row.finished ? 'finished' : 'pending']++;
+      return { requests, states, partial: cdp.partial, captureClosed: cdp.closed, closeReason: cdp.closeReason, coverage: 'events-after-network-enable', sensitiveHeaders: 'redacted' };
+    }
     let bytes, kind, metadata;
     if (args.action === 'dom') {
       const { root } = await cdp.call('DOM.getDocument', { depth: 0, pierce: false }, signal);

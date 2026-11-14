@@ -31,15 +31,17 @@ public class MetadataInspect {
     row.put("returnClassifier", String.valueOf(f.getReturnType().getClassifier())); return row;
   }
   public static void main(String[] args) throws Exception {
-    List<Object> classes = new ArrayList<>(); boolean partial = false; int examined = 0, metadataBytes = 0, composeInstructions = 0;
+    List<Object> classes = new ArrayList<>(); boolean partial = false; int examined = 0, visited = 0, metadataBytes = 0, composeInstructions = 0;
     JadxArgs options = new JadxArgs(); options.setInputFile(new File(args[0])); options.setSkipResources(true); options.setThreadsCount(2);
     options.setOutDir(new File(args[1]).getParentFile());
     try (JadxDecompiler jadx = new JadxDecompiler(options)) {
       jadx.load();
       for (JavaClass api : jadx.getClassesWithInners()) {
-        if (++examined > 5000) { partial = true; break; }
+        if (++visited > 100000) { partial = true; break; }
         ClassNode cls = api.getClassNode();
         if (args.length > 2 && !cls.getRawName().startsWith(args[2])) continue;
+        // long: query限定业务包时，无关依赖只占轻量遍历预算，不能耗尽目标类的metadata解析额度。
+        if (++examined > 5000) { partial = true; break; }
         if (cls.getClsData() == null) continue;
         Map<String,Object> annotations = new LinkedHashMap<>();
         for (var attribute : cls.getClsData().getAttributes()) if (attribute instanceof AnnotationsAttr attr) for (IAnnotation annotation : attr.getList()) {
@@ -54,7 +56,7 @@ public class MetadataInspect {
           String signature = method.getMethodInfo().getShortId(); methods.add(signature);
           if (signature.contains("Landroidx/compose/runtime/Composer;")) {
             compose.add(signature);
-            Map<String,Integer> signals = new LinkedHashMap<>();
+            Map<String,Integer> signals = new LinkedHashMap<>(); List<Object> callsites = new ArrayList<>();
             try {
               int instructionCount=method.getInsnsCount();
               if(instructionCount<0||composeInstructions+instructionCount>50000){partial=true;signals.put("instruction-budget-exceeded",1);}
@@ -68,11 +70,15 @@ public class MetadataInspect {
                   else if(owner.equals("androidx.compose.runtime.Composer")&&name.equals("rememberedValue"))signal="remember-read-candidate";
                   else if(owner.equals("androidx.compose.runtime.Composer")&&name.equals("updateRememberedValue"))signal="remember-write-candidate";
                   else if(owner.equals("kotlin.jvm.functions.Function0")&&name.equals("invoke"))signal="lambda-invocation-candidate";
-                  if(signal!=null)signals.merge(signal,1,Integer::sum);
+                  if(signal!=null){
+                    signals.merge(signal,1,Integer::sum);
+                    // long: 保留原始DEX指令偏移和实际被调用签名，支持核对候选来源；不把调用引用升级为状态数据流。
+                    callsites.add(Map.of("signal",signal,"dexOffset",insn.getOffset(),"offsetUnit","16-bit-code-unit","targetClass",owner,"targetSignature",target.getShortId()));
+                  }
                 }
               }
             } catch(Exception error) { partial=true; signals.put("instruction-read-failed",1); }
-            composeSignals.add(Map.of("jvmSignature",signature,"signals",signals,"evidence","compiled-invoke-reference-candidate"));
+            composeSignals.add(Map.of("jvmSignature",signature,"signals",signals,"callsites",callsites,"evidence","compiled-invoke-reference-candidate"));
           }
           if (method.getName().equals("invokeSuspend")) stateMachine = true;
           // long: 只按DEX中的真实JavascriptInterface注解列出桥接声明，方法名相似不能证明它向JS开放。
@@ -104,7 +110,7 @@ public class MetadataInspect {
         classes.add(row);
       }
     }
-    Map<String,Object> report = new LinkedHashMap<>(); report.put("classes",classes); report.put("examined",examined); report.put("composeInstructions",composeInstructions); report.put("partial",partial);
+    Map<String,Object> report = new LinkedHashMap<>(); report.put("classes",classes); report.put("examined",examined); report.put("visited",visited); report.put("composeInstructions",composeInstructions); report.put("partial",partial);
     report.put("limitation","metadata声明和编译结构候选，不恢复完整Compose UI/异步调用链/KMP commonMain");
     Files.writeString(Path.of(args[1]),new Gson().toJson(report));
   }

@@ -2,6 +2,10 @@
 
 日期：2026-11-13。基线：android-reserve-mcp 0.1.0、13个分组工具入口。
 
+## 当前范围调整（2026-11-14）
+
+按用户决定，Unity、Unreal、HarmonyOS NEXT暂缓，短期不再推进，不属于当前迭代任务、发版门槛或阻塞项。保留下文历史研究、候选引擎和未验证边界，只有用户明确恢复后才重新评估。Godot不在此次暂缓范围。最新能力与有效待办见[当前增量](CURRENT-INCREMENT.md)和[实施进展](PROGRESS.md)。
+
 本文记录已批准实施的0.1.0基线缺口，不是当前功能表。当前实际进展和剩余项以[PROGRESS.md](PROGRESS.md)为准（截至2026-11-14，本地0.5.1 tag及其后工作树分别说明），调用与环境见[ENGINES.md](ENGINES.md)。Java同调用、标准入口未来JNI注册/撤销与RVA，以及Blutter/ILSpy/GDRE所列样本现已完成；0.5.x另已完成所选分包一致性/聚合、AAB派生、Kotlin声明、自定义loader、WebView/CDP、store提取和有界证据索引；边界见ADVANCED-ANALYSIS.md。下文保留原评估基线，不要把当时的“未实现”或候选当成当前状态。
 
 ## 1. 目标如何验收
@@ -85,8 +89,8 @@
 
 1. **P0：共用底座。** B01/B02/B04/B05/B07/B08/B09先建立，补Frida设备验收与动态事件模型；Native优先核验REA现有能力复用，避免重复实现。
 2. **P1：主要Android业务App。** 深化Java/Kotlin/Compose，接入Hermes、Flutter AOT、WebView/Capacitor，完成JS/JNI/platform channel等桥接；KMP Android目标及低代码相同后端随之受益。
-3. **P2：扩展专项。** MAUI/.NET、Unity、Godot、Unreal、Lynx、NativeScript专用格式，以及Go/Rust更深的语言恢复；按实际目标使用频率调整先后。
-4. **独立范围：Harmony。** 和Android共用任务/证据/provider抽象，但单列输入、字节码、SDK和设备适配，不能仅靠更名算支持。
+3. **P2：扩展专项。** MAUI/.NET、Godot、Lynx、NativeScript专用格式，以及Go/Rust更深的语言恢复；按实际目标使用频率安排。
+4. **暂缓：Unity、Unreal、HarmonyOS NEXT。** 保留独立产物/引擎/SDK/设备链的历史评估，短期不投入实现、样本获取或环境安装，不因这些专项未完成阻塞其他方向或发行。
 
 不以工具入口数作为验收指标。保留少量分组入口、按需启动引擎、按需读取Skill；具体新增哪些action/入口在实施设计时确定。
 

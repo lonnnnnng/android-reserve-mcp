@@ -1,6 +1,8 @@
 # 引擎配置与新增能力使用
 
-适用0.5.2。所有引擎均按需使用；本MCP不自动安装、升级或清理外部工具。未配置的能力不会伪装为已就绪。完整依赖基线见ENVIRONMENT.md，三种新引擎的私有安装步骤见ENGINE-SETUP.md。
+适用0.5.2及明确标注的未发行工作树。最新增量、调用与边界见CURRENT-INCREMENT.md。所有引擎按需使用，不自动安装、升级或清理外部工具。完整依赖见ENVIRONMENT.md，私有安装见ENGINE-SETUP.md。
+
+Unity、Unreal、HarmonyOS NEXT自2026-11-14起暂缓。下表IL2CPP/Ark仅保留现有固定CLI适配，不列为近期安装或验收任务，不代表对应框架已通过；恢复需用户明确安排。
 
 ## 1. 产物索引和提取
 
@@ -66,7 +68,7 @@
 
 | engine | 环境变量 | 输入与关键限制 | 当前验收 |
 | --- | --- | --- | --- |
-| hermes | ANDROID_RESERVE_HBC_DISASSEMBLER | hbc-disassembler绝对路径；普通HBC；入口范围72–96，其余明确拒绝 | hermes-dec0.1.8、HBC84自有样本通过；其他版本未逐一测 |
+| hermes | ANDROID_RESERVE_HBC_DISASSEMBLER | 普通HBC72–96；工作树97–99须allowExperimental=true并强制partial，100/未知拒绝 | HBC84回归与真实RNTester HBC99实验反汇编通过；debug元数据未验证 |
 | flutter | ANDROID_RESERVE_BLUTTER | blutter.py绝对路径；调用方提供同构建ARM64 libapp.so/libflutter.so目录；显式allowEngineBuild=true | 固定Blutter commit、Flutter3.41.9/Dart3.11.5自有release样本通过 |
 | ilspy | ANDROID_RESERVE_ILSPY | ilspycmd绝对路径；已提取有CLI目录的PE；不是MAUI store或NativeAOT | ILSpy11.2.0.10050、独立.NET10，自有程序集通过 |
 | godot | ANDROID_RESERVE_GDRE | GDRETools可执行文件；APK/PCK等恢复；不自动强制版本或解密 | GDRE2.7.4、自有Godot4.3 GDScript字节码PCK通过 |
