@@ -123,3 +123,17 @@ test('JNI与Java共用进程所有权；忽略旧脚本加载错误，当前JNI�
     await wait(context, await frida(context, { action: 'close', sessionId })); assert.equal(context.javaObservers.size, 0);
   } finally { await context.close(); }
 });
+
+test('Mono复用进程观测所有权，晚到错误按当前脚本撤销且不执行Java编译',async()=>{
+  const {context,state,trace,sessionId}=await fixture();
+  try {
+    const mono={action:'trace-mono',sessionId,monoTarget:{assemblyName:'Owned',namespace:'Owned',className:'App',methodName:'Add',argumentTypes:['int32'],returnType:'int32',allowRuntimeCompile:true}};
+    assert.equal((await wait(context,await frida(context,mono))).state,'succeeded');assert.equal(state.compiled,0);
+    await assert.rejects(frida(context,trace),/该进程已有/);
+    const scriptId=context.javaObservers.get(sessionId).scriptId;
+    state.messages=[{script_id:scriptId,type:'send',payload:{event:'managed-setup-error',description:'mismatched-method'}}];
+    const result=await wait(context,await frida(context,{action:'status',sessionId}));
+    assert.equal(result.state,'failed');assert.match(result.error,/mismatched-method/);assert.equal(context.javaObservers.size,0);
+    assert.equal(state.calls.at(-1).name,'unload_frida_script');
+  } finally {await context.close();}
+});

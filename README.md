@@ -2,7 +2,7 @@
 
 聚焦Android产物、DEX、JS、SO、资源和运行观测的MCP服务。使用本地CLI和静态解析器，复杂查询按需启动REA后端；对模型提供20个分组入口，避免加载整个通用逆向工具集。
 
-已发布 GitHub/npm 版本为 `0.5.2`：[下载 Release](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.2)，源码仓库：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)。当前工作树新增的 Flutter channel 候选、HBC99实验反汇编、Compose位置证据与真实MAUI提取补强尚未发行，使用时从源码运行。确切验收与剩余缺口见[本轮进展](docs/CURRENT-INCREMENT.md)、[变更记录](CHANGELOG.md)。
+已发布 GitHub/npm 版本为 `0.5.3`：[下载 Release](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.3)，源码仓库：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)。本版本包含 Flutter channel 候选、HBC99实验反汇编、Compose位置证据、RN/Java请求回复、Mono方法观测与WebView initiator关联；确切验收与剩余缺口见[本轮进展](docs/CURRENT-INCREMENT.md)、[变更记录](CHANGELOG.md)。
 
 OpenCode 连接名和专用模式名均为 `android-reserve`，协议服务名与 npm 包名为 `android-reserve-mcp`。OpenCode 工具前缀为 `android-reserve_`。各类应用的覆盖范围见 [能力与限制](docs/CAPABILITIES.md)。
 
@@ -12,7 +12,7 @@ OpenCode 连接名和专用模式名均为 `android-reserve`，协议服务名�
 
 **完整能力依赖与安装检查见 [环境与工具依赖](docs/ENVIRONMENT.md)。** 最小启动需要 Node.js ≥26.12.1；APK 摘要需要 Python ≥3.11。完整静态分析还需要完整 JDK 17+、JADX CLI、apktool、Android SDK、ripgrep、LLVM readelf，以及 REA 6.9.0 和独立的 JADX headless MCP 0.7.1 JAR。动态分析还需要 Frida Node binding 和可连接的 Android 设备环境。
 
-可通过`npm install android-reserve-mcp@0.5.2`安装已发布CLI；本机尚未发行的增量按下方源码方式运行。npm/GitHub首次发布状态见[首发待办](docs/FIRST-RELEASE-TODO.md)。
+可通过`npm install android-reserve-mcp@0.5.3`安装已发布CLI。npm/GitHub历史发布状态见[首发待办](docs/FIRST-RELEASE-TODO.md)。
 
 JS分析依赖随npm安装，不需要浏览器。Native函数分析需要配置可用provider；本机已验证Ghidra12.2、macOS ARM64原生decompiler及独立JDK25。Hermes HBC84、Flutter/Dart3.11.5、ILSpy托管程序集、Godot4.3脚本字节码已有自有样本通过；这不等于完整RN/MAUI/游戏恢复。可选环境、固定参数和安装记录见 [引擎说明](docs/ENGINES.md)与[引擎安装](docs/ENGINE-SETUP.md)。
 
@@ -62,7 +62,7 @@ node src/cli.js --help
 | `script` | JS/TS/JSX/Flow静态索引、格式化及显式source map位置映射 |
 | `framework` | 可选引擎状态/探测/固定CLI分析：Hermes、Flutter、ILSpy、Godot、IL2CPP、Ark |
 | `device` | ADB 列设备、属性、包、进程、有限 logcat，只读操作 |
-| `frida` | attach/spawn、Java精确方法观测、动态JNI注册/撤销、导出名或模块RVA Native观测、Java↔Native同调用关联、load/unload/resume/status/close |
+| `frida` | attach/spawn、Java精确/实验分组观测、Mono ARM64静态整数方法观测、动态JNI注册/撤销、导出名或模块RVA Native观测、Java↔Native同调用关联、load/unload/resume/status/close |
 | `rebuild` | apktool 重建、zipalign、自选 keystore 签名并复验 |
 | `jobs` | 任务列表、状态、取消 |
 | `artifacts` | 列任务文件，按字节分页读取结果/日志/源码 |
@@ -107,6 +107,7 @@ Java专项：默认先`java-methods`读取app loader的真实重载；自定义l
 
 ## 文档与验证
 
+- [动态关联与已知限制](docs/DYNAMIC-CORRELATION.md)：RN/Java回调、Mono精确方法、WebView initiator，以及Flutter/Compose兼容阻塞。
 - [新增能力与调用步骤](docs/ADVANCED-ANALYSIS.md)：分包、Kotlin、自定义loader、WebView、程序集与持久证据。
 - [环境与完整依赖](docs/ENVIRONMENT.md)：按能力安装、动态设备条件、版本、故障排查。
 - [架构](docs/ARCHITECTURE.md)：按需后端、队列、进程与产物边界。

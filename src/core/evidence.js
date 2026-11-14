@@ -31,8 +31,23 @@ export function indexEvidence(jobId, sources) {
       const runtime=[scope.device,scope.session,scope.pid,scope.script,scope.trace];
       const data={event:value.event,pid:value.pid,sequence:value.sequence,methodKey:value.methodKey,className:value.className,address:value.address,rva:value.rva,module:value.module,outcome:value.outcome};
       const event=add('runtime-event',[runtime,value.sequence,key(value)],data);edge(run,event,'observed-result',citation,'reported-runtime-event');
+      if(value.runtime==='mono'&&value.association==='mono-jit-info-method-identity'&&typeof value.imageGuid==='string'&&typeof value.metadataToken==='string'){
+        // long: MVID和MethodDef只在本运行会话的Mono回核范围关联，不自动冒充与磁盘DLL哈希同构建。
+        const method=add('managed-method',[runtime,value.imageGuid,value.metadataToken],{runtime:'mono',imageGuid:value.imageGuid,metadataToken:value.metadataToken,assemblyName:value.assemblyName,fullName:value.fullName,address:value.address,module:value.module,rva:value.rva});
+        edge(event,method,'observes-resolved-managed-method',citation,'mono-jit-info-method-identity');
+      }
       for(const field of ['invocationId','javaInvocationId'])if(typeof value[field]==='string'){
         const call=add('runtime-call',[runtime,value[field]],{scope,reportedInvocationId:value[field]});edge(event,call,field==='javaInvocationId'?'reported-within-java-call':'reported-call-phase',citation,'reported-same-script-call-id');
+        if(field==='invocationId'&&typeof value.parentInvocationId==='string'){
+          const parent=add('runtime-call',[runtime,value.parentInvocationId],{scope,reportedInvocationId:value.parentInvocationId});
+          edge(call,parent,'within-java-original-call',citation,'same-agent-thread-call-stack');
+        }
+      }
+      if(value.correlation?.association==='jni-isSameObject'&&typeof value.correlation.requestId==='string'&&typeof value.invocationId==='string'){
+        const request=add('runtime-call',[runtime,value.correlation.requestId],{scope,reportedInvocationId:value.correlation.requestId});
+        const reply=add('runtime-call',[runtime,value.invocationId],{scope,reportedInvocationId:value.invocationId});
+        const relation=value.correlation.state==='reply-returned'?'reply-returned-for-object':value.correlation.state==='reply-threw'?'reply-threw-for-object':'reply-attempt-for-object';
+        edge(reply,request,relation,citation,'same-agent-jni-object-identity');
       }
       if(typeof value.registrationId==='string'){const registration=add('jni-registration',[runtime,value.registrationId],{scope,registrationId:value.registrationId});edge(event,registration,'reported-registration-phase',citation,'reported-same-script-call-id');}
     }
@@ -63,6 +78,22 @@ export function indexEvidence(jobId, sources) {
   for(const source of sources){const hash=sha(source.artifactHash)?source.artifactHash.toLowerCase():null;const anchor=hash?add('artifact',hash,{sha256:hash}):null;walk(source.value,'',source.file,{},anchor);}
   for(const source of sources){
     const value=source.value,citation=(jsonPointer)=>({jobId,file:source.file,jsonPointer});
+    if(typeof value?.sessionId==='string'&&typeof value?.processEpoch==='string'){
+      const runtime=[value.sessionId,value.processEpoch];
+      const script=(scriptId)=>add('webview-script',[runtime,scriptId],{sessionId:value.sessionId,processEpoch:value.processEpoch,scriptId});
+      if(value.kind==='js'&&value.metadata?.scriptId&&sha(value.sha256)){
+        const artifact=add('artifact',value.sha256.toLowerCase(),{sha256:value.sha256.toLowerCase(),bytes:value.bytes});
+        edge(script(value.metadata.scriptId),artifact,'captured-script-content',citation('/metadata'),'same-cdp-script-id-content-hash');
+      }
+      for(const [index,row] of (value.requests||[]).slice(0,200).entries()){
+        const request=add('webview-request',[runtime,row.requestId],{sessionId:value.sessionId,processEpoch:value.processEpoch,requestId:row.requestId,url:row.url,method:row.method,status:row.response?.status,finished:row.finished,failure:row.failure});
+        for(const [i,frame] of (row.initiator?.frames||[]).slice(0,64).entries()){
+          const site=add('webview-initiator-frame',[runtime,row.requestId,index,i],{...frame,coordinateBase:0,sessionId:value.sessionId,processEpoch:value.processEpoch});
+          edge(request,site,'reported-initiator-frame',citation('/requests/'+index+'/initiator/frames/'+i),'cdp-runtime-initiator-stack');
+          if(frame.scriptObserved)edge(site,script(frame.scriptId),'references-observed-script',citation('/requests/'+index+'/initiator/frames/'+i),'same-cdp-session-script-id');
+        }
+      }
+    }
     if(value?.kind==='flutter-channel-candidates')for(const [i,row] of (value.matches||[]).slice(0,10000).entries()){
       const scope=sha(value.input?.sha256)?value.input.sha256:jobId;
       const dart=add('flutter-dart-callsite-candidate',[scope,row.dart?.source,row.channel,row.method],{channel:row.channel,method:row.method,source:row.dart?.source,analysisJobId:value.analysisJobId});

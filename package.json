@@ -1,6 +1,6 @@
 {
   "name": "android-reserve-mcp",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Focused Android reverse-engineering MCP with bounded artifacts and a lazy analysis backend",
   "type": "module",
   "bin": {

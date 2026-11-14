@@ -20,6 +20,21 @@ function headers(values = {}) {
   return Object.fromEntries(Object.entries(values).slice(0, 100).map(([key, value]) => [key.slice(0, 200), /authorization|cookie|api[-_]?key|token|secret/i.test(key) ? '<redacted>' : String(value).slice(0, 2048)]));
 }
 
+export function initiatorView(value) {
+  if (!value) return undefined;
+  const result = { type: String(value.type || '').slice(0, 64), coordinateBase: 0, frames: [], partial: false };
+  let stack = value.stack, depth = 0;
+  // long: 仅保留CDP实际提供的有界栈；缺失父栈不按URL或时间补推异步因果。
+  while (stack && depth < 4) {
+    const frames = Array.isArray(stack.callFrames) ? stack.callFrames : [];
+    for (const frame of frames.slice(0, 16)) result.frames.push({ scriptId: String(frame.scriptId || '').slice(0, 256), functionName: String(frame.functionName || '').slice(0, 512), url: String(frame.url || '').slice(0, 2048), lineNumber: frame.lineNumber, columnNumber: frame.columnNumber, stackDepth: depth });
+    if (frames.length > 16 || stack.parentId) result.partial = true;
+    stack = stack.parent; depth++;
+  }
+  if (stack) result.partial = true;
+  return result;
+}
+
 export class Cdp {
   constructor(url) {
     this.pending = new Map(); this.next = 0; this.scripts = new Map(); this.requests = new Map(); this.partial = false; this.bytes = 0; this.closed = false;
@@ -46,12 +61,12 @@ export class Cdp {
   observe(method, p) {
     if (method === 'Debugger.scriptParsed') {
       if (this.scripts.size >= 200 && !this.scripts.has(p.scriptId)) { this.partial = true; return; }
-      this.scripts.set(p.scriptId, { scriptId: p.scriptId, url: String(p.url || '').slice(0, 8192), hash: p.hash, executionContextId: p.executionContextId, scriptLanguage: p.scriptLanguage });
+      this.scripts.set(p.scriptId, { scriptId: p.scriptId, url: String(p.url || '').slice(0, 8192), hash: p.hash, executionContextId: p.executionContextId, scriptLanguage: p.scriptLanguage, startLine: p.startLine, startColumn: p.startColumn, sourceMapURL: String(p.sourceMapURL || '').slice(0, 2048) });
     }
     if (method === 'Network.requestWillBeSent') {
       if (this.requests.size >= 200 && !this.requests.has(p.requestId)) { this.partial = true; return; }
       const old = this.requests.get(p.requestId), request = p.request || {};
-      this.requests.set(p.requestId, { requestId: p.requestId, url: String(request.url || '').slice(0, 8192), method: request.method, headers: headers(request.headers), timestamp: p.timestamp, redirects: [...(old?.redirects || []), ...(p.redirectResponse ? [{ url: p.redirectResponse.url, status: p.redirectResponse.status }] : [])].slice(-20) });
+      this.requests.set(p.requestId, { requestId: p.requestId, url: String(request.url || '').slice(0, 8192), method: request.method, headers: headers(request.headers), timestamp: p.timestamp, initiator: initiatorView(p.initiator), redirects: [...(old?.redirects || []), ...(p.redirectResponse ? [{ url: p.redirectResponse.url, status: p.redirectResponse.status }] : [])].slice(-20) });
     }
     const record = this.requests.get(p.requestId);
     if (!record) return;
@@ -163,13 +178,14 @@ export async function webview(context, args) {
     if (args.action === 'open') return context.webviews.open(args, signal);
     if (args.action === 'close') { if (!args.sessionId) throw new Error('close必须明确sessionId'); await context.webviews.close(args.sessionId); return { closed: true }; }
     const entry = await context.webviews.use(args.sessionId, signal), cdp = entry.cdp;
-    if (args.action === 'scripts') return { scripts: [...cdp.scripts.values()], partial: cdp.partial };
+    const scope = { sessionId: args.sessionId, processEpoch: entry.owner.epoch, serial: entry.args.serial, pid: entry.args.pid };
+    if (args.action === 'scripts') return { ...scope, scripts: [...cdp.scripts.values()], partial: cdp.partial };
     if (args.action === 'network') {
-      const requests = [...cdp.requests.values()];
+      const requests = [...cdp.requests.values()].map(row => ({ ...row, ...(row.initiator ? { initiator: { ...row.initiator, frames: row.initiator.frames.map(frame => ({ ...frame, scriptObserved: cdp.scripts.has(frame.scriptId) })) } } : {}) }));
       // long: 捕获未截断不等于请求已成功；单列终态数量，避免把空列表或pending当网络验收通过。
       const states = { pending: 0, finished: 0, failed: 0 };
       for (const row of requests) states[row.failure ? 'failed' : row.finished ? 'finished' : 'pending']++;
-      return { requests, states, partial: cdp.partial, captureClosed: cdp.closed, closeReason: cdp.closeReason, coverage: 'events-after-network-enable', sensitiveHeaders: 'redacted' };
+      return { ...scope, requests, states, partial: cdp.partial || requests.some(row => row.initiator?.partial), captureClosed: cdp.closed, closeReason: cdp.closeReason, coverage: 'events-after-network-enable', sensitiveHeaders: 'redacted' };
     }
     let bytes, kind, metadata;
     if (args.action === 'dom') {

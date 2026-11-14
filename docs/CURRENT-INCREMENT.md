@@ -1,8 +1,22 @@
 # 未发行工作树进展
 
-核对日期：2026-11-14。GitHub/npm已发布版本仍为0.5.2。本页记录tag之后的源码增量，尚未发行到npm或GitHub Release；源码提交/推送不代表新版本发布。它优先于其他文档的发行历史快照。MCP仍为20个分组入口。
+核对日期：2026-11-14。GitHub/npm已发布版本为0.5.3。本页记录本次动态关联增量及其证据，MCP仍为20个分组入口。
 
-## 已验证与边界
+## 动态关联新增
+
+调用配置、环境、预算与兼容失败见[DYNAMIC-CORRELATION.md](DYNAMIC-CORRELATION.md)，关键事件/产物哈希见[evidence/framework-dynamic-20261114.json](evidence/framework-dynamic-20261114.json)。
+
+| 范围 | 当前实际结果 | 不能扩大为 |
+| --- | --- | --- |
+| 通用Java | 两请求不同线程逆序回复47、46，JNI对象身份对应正确；同线程inner调用父子关系；TTL丢失身份后停止确定配对 | 任意对象复用/不可见旧请求都可区分、全程序异步图 |
+| RN | 无R8的真实RNTester，Java getValueWithPromise(false)→同Promise resolve("result")并正常返回；原混淆APK页面因重复launcher key退出，分别留档 | Hermes then执行、reject分支、完整JSI/Fabric链 |
+| MAUI | 原Release定位ReserveAdd至AOT RVA0x45d0但无调用；另一个NoInlining样本经Mono完整签名/MVID/token/JIT回核捕获2、7→46 | 原APK内联方法覆盖、复杂托管ABI/CoreCLR/NativeAOT |
+| WebView | 真实fetch的CDP initiator→本会话scriptId→采集SHA→静态AST；自有HTTPS拦截正文result46 | 新的公网稳定性成功或JS→Java跨会话因果 |
+| Flutter/Compose | 自有/官方样本构建运行与原静态候选保留；Java原方法回调/状态入口在Android16上触发JNI transition错误，预取类句柄仍失败 | 动态channel配对、Compose状态/重组因果已完成 |
+
+原Java/JNI重载、同调用Java46/JNI9、异常、unload/spawn回归通过；trace-jni外置workspace实际编译通过。Unity/Unreal/HarmonyOS NEXT仍暂缓。上述增量已随`0.5.3`发布。
+
+## 前次静态增量与边界
 
 | 专项 | 本轮已验证 | 仍未完成 |
 | --- | --- | --- |
@@ -46,8 +60,8 @@ ILSpy引用只取顶层普通DLL，最多4096目录项，单DLL128MiB累计512Mi
 
 ## 当前待办
 
-- 优先深化现有Android链路：Flutter channel动态因果、Compose状态/事件、RN新架构关联和WebView网络稳定性；现有静态候选与实验能力保留边界。
-- MAUI托管运行观测与AOT映射、KMP klib/commonMain、Lynx codec、NativeScript snapshot、更多Dart/ABI、Godot C#/版本仍属未完成项，按后续实际需求安排。
+- 优先深化现有Android链路：Flutter channel动态因果、Compose状态/事件、RN Hermes/JSI进一步关联和WebView网络稳定性；当前Flutter/Compose JNI兼容阻塞单列；现有静态候选与实验能力保留边界。
+- MAUI其他托管ABI/内联/AOT映射、KMP klib/commonMain、Lynx codec、NativeScript snapshot、更多Dart/ABI、Godot C#/版本仍属未完成项，按后续实际需求安排。
 
 ## 暂缓方向
 
@@ -63,7 +77,7 @@ ILSpy引用只取顶层普通DLL，最多4096目录项，单DLL128MiB累计512Mi
 
 .NET Android载荷与索引定义核对上游commit f3c3354f71245976607801c657f6c3d1e39a3529 的 tests/Utilities/AssemblyStore/Utils.cs（符号优先、缺符号时payload节）与StoreReader_V2.Classes.cs（索引9/13字节）；固定正文已读取，未复制上游实现到本包。
 
-自动测试45项通过，JS/Python语法检查通过；HBC84、Kotlin/Compose与store回归通过。工作树tarball实装握手20工具/doctor通过，包清单不含缓存/引擎/样本二进制/私有路径；不将旧registry资产当新增能力。版本号尚未提升，不能以0.5.2覆盖发布。
+前次静态增量自动测试45项通过，JS/Python语法检查通过；HBC84、Kotlin/Compose与store回归通过。工作树tarball实装握手20工具/doctor通过，包清单不含缓存/引擎/样本二进制/私有路径；不将旧registry资产当新增能力。版本号尚未提升，不能以0.5.2覆盖发布。
 
 最终包清单55个源码/文档文件。新增maui-owned-build.mjs已在全新目录/tmp/android-reserve-maui-repro-20261114独立构建通过（42.58秒，两个JDK版本识别警告、零错误）；没有将该复现APK再次安装手机。已验收的MAUI/WebView测试App均force-stop，ADB forward无本轮残留。
 

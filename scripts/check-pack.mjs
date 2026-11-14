@@ -10,7 +10,7 @@ const response=checked(await run(await tool('npm'),['pack','--dry-run','--ignore
 assert.equal(response.truncated,false);
 const [pack]=JSON.parse(response.stdout),names=new Set(pack.files.map(f=>f.path));
 assert.equal(pack.name,'android-reserve-mcp');assert.equal(pack.version,VERSION);
-for(const required of ['src/cli.js','src/server.js','src/core/evidence.js','src/core/webview.js','helpers/MetadataInspect.java','helpers/flutter-channels.py','helpers/package-set.py','helpers/assembly-store.py','helpers/java-loaders.js','helpers/artifact.py','docs/ADVANCED-ANALYSIS.md'])assert.ok(names.has(required),'缺少运行/说明文件：'+required);
+for(const required of ['src/cli.js','src/server.js','src/core/evidence.js','src/core/webview.js','helpers/MetadataInspect.java','helpers/flutter-channels.py','helpers/package-set.py','helpers/assembly-store.py','helpers/java-loaders.js','helpers/java-group-observer.js','helpers/mono-observer.js','src/core/mono-agent.js','docs/DYNAMIC-CORRELATION.md','helpers/artifact.py','docs/ADVANCED-ANALYSIS.md'])assert.ok(names.has(required),'缺少运行/说明文件：'+required);
 for(const name of names){
   assert.ok(!path.isAbsolute(name)&&!name.split('/').includes('..'),'发布路径越界：'+name);
   assert.ok(!name.split('/').some(p=>['output','workspace','backups','node_modules','__pycache__'].includes(p)),'发布包包含私有/缓存目录：'+name);

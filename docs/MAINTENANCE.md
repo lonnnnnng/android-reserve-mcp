@@ -51,7 +51,7 @@ smoke 需要完整静态环境并生成自有 APK/临时签名；不会接触设
 
 ## GitHub / npm 发布准备
 
-GitHub公开仓库和`v0.5.2`Release已发布；npm包尚未发布。后续版本准备时：
+GitHub公开仓库和`v0.5.3`Release、npm包均已发布。后续版本准备时：
 
 - 确认代码、README、包名、bin、展示名均为 android-reserve-mcp。
 - 取得要发布版本的测试证据，更新版本和变更说明；Git 提交说明使用中文。

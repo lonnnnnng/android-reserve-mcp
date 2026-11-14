@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Paths, within } from './core/paths.js';
 import { Jobs } from './core/jobs.js';
@@ -12,7 +13,8 @@ export { framework } from './core/engines.js';
 import { engineCatalog } from './core/engines.js';
 import { runtimeScript, nativeTraceScript, validateNativeHook } from './core/frida-scripts.js';
 import { VERSION } from './version.js';
-import { compileJavaAgent } from './core/java-agent.js';
+import { compileJavaAgent, validateJavaGroup } from './core/java-agent.js';
+import { monoTraceScript } from './core/mono-agent.js';
 import { WebViews } from './core/webview.js';
 import { kotlinMetadata } from './core/kotlin.js';
 export { webview } from './core/webview.js';
@@ -215,8 +217,10 @@ function structured(result) {
 }
 
 export async function frida(context, args) {
-  const names = { devices: 'list_frida_devices', processes: 'list_frida_processes', attach: 'start_frida_session', spawn: 'start_frida_session', load: 'load_frida_script', runtime: 'load_frida_script', 'trace-native': 'load_frida_script', 'java-methods': 'load_frida_script', 'java-loaders': 'load_frida_script', 'trace-java': 'load_frida_script', 'trace-jni': 'load_frida_script', unload: 'unload_frida_script', resume: 'resume_frida_session', status: 'frida_session_status', close: 'close_frida_session' };
-  const javaAction = ['java-methods', 'java-loaders', 'trace-java', 'trace-jni'].includes(args.action);
+  const names = { devices: 'list_frida_devices', processes: 'list_frida_processes', attach: 'start_frida_session', spawn: 'start_frida_session', load: 'load_frida_script', runtime: 'load_frida_script', 'trace-native': 'load_frida_script', 'java-methods': 'load_frida_script', 'java-loaders': 'load_frida_script', 'trace-java': 'load_frida_script', 'trace-java-group': 'load_frida_script', 'trace-jni': 'load_frida_script', unload: 'unload_frida_script', resume: 'resume_frida_session', status: 'frida_session_status', close: 'close_frida_session' };
+  const monoAction = args.action === 'trace-mono';
+  const javaAction = ['java-methods', 'java-loaders', 'trace-java', 'trace-java-group', 'trace-jni'].includes(args.action);
+  const observerAction = javaAction || monoAction;
   const parameters = {};
   if (['processes', 'attach', 'spawn'].includes(args.action)) {
     parameters.device_id = required(args.deviceId, 'deviceId');
@@ -225,26 +229,28 @@ export async function frida(context, args) {
   if (args.action === 'attach') { parameters.mode = 'attach'; parameters.pid = required(args.pid, 'pid'); }
   if (args.action === 'spawn') { parameters.mode = 'spawn'; parameters.program = required(args.packageName, 'packageName'); }
   if (['attach', 'spawn'].includes(args.action)) parameters.capture_limits = { session_bytes: 1048576, message_type_bytes: 32768, message_text_bytes: 8192, json_nodes: 2000, json_depth: 20 };
-  if (['load', 'runtime', 'trace-native', 'java-methods', 'java-loaders', 'trace-java', 'trace-jni', 'unload', 'resume', 'status', 'close'].includes(args.action)) {
+  if (['load', 'runtime', 'trace-native', 'java-methods', 'java-loaders', 'trace-java', 'trace-java-group', 'trace-jni', 'trace-mono', 'unload', 'resume', 'status', 'close'].includes(args.action)) {
     parameters.session_id = required(args.sessionId, 'sessionId');
     if (!context.sessions.has(parameters.session_id)) throw new Error('仅能操作本服务器创建的 Frida 会话');
   }
   if (['java-methods', 'trace-java'].includes(args.action)) { required(args.className, 'className'); required(args.methodName, 'methodName'); }
   if (args.action === 'trace-java' && !Array.isArray(args.argumentTypes)) throw new Error('trace-java必须显式argumentTypes，空参数使用[]；先java-methods读取实际重载');
+  if (args.action === 'trace-java-group') validateJavaGroup(args);
   if (args.action === 'trace-java') for (const hook of args.nativeHooks || []) validateNativeHook(hook);
   if (args.action === 'unload') {
     parameters.script_id = required(args.scriptId, 'scriptId');
     if (!context.scripts.get(args.sessionId)?.has(args.scriptId)) throw new Error('scriptId不属于本服务该会话');
   }
   if (args.action === 'load') { parameters.source_kind = 'file'; parameters.path = await context.paths.input(required(args.scriptPath, 'scriptPath')); }
-  const generated = args.action === 'runtime' ? runtimeScript() : args.action === 'trace-native' ? nativeTraceScript(args) : null;
+  if (monoAction) names['trace-mono'] = 'load_frida_script';
+  const generated = args.action === 'runtime' ? runtimeScript() : args.action === 'trace-native' ? nativeTraceScript(args) : monoAction ? monoTraceScript({ ...args, traceId: randomUUID() }) : null;
   let reservation;
   if (args.action === 'close' && ['queued', 'compiling', 'loading'].includes(context.javaObservers.get(args.sessionId)?.state)) throw new Error('Java observer正在排队或注入，请先取消并等待该任务结束，再close会话');
-  if (javaAction) {
+  if (observerAction) {
     const targetKey = context.sessionTargets.get(args.sessionId);
     if (!targetKey) throw new Error('会话缺少设备/PID身份，请close后重新attach或spawn');
     // long: 独立bridge无法识别其他脚本的replacement；同设备/PID的多会话也必须共用一份观测所有权。
-    if ([...context.javaObservers.values()].some(observer => observer.targetKey === targetKey)) throw new Error('该进程已有Java observer，请先unload其scriptId或close所属会话，避免覆盖已有hook');
+    if ([...context.javaObservers.values()].some(observer => observer.targetKey === targetKey)) throw new Error('该进程已有Java/JNI/Mono observer，请先unload其scriptId或close所属会话，避免覆盖已有hook');
     reservation = { scriptId: null, state: 'queued', targetKey }; context.javaObservers.set(args.sessionId, reservation);
   }
   const releaseReservation = () => { if (reservation && context.javaObservers.get(args.sessionId) === reservation) context.javaObservers.delete(args.sessionId); };
@@ -262,11 +268,12 @@ export async function frida(context, args) {
       if (!context.sessions.has(args.sessionId)) throw new Error('Frida会话已关闭，未继续注入');
       if (reservation) reservation.state = 'loading';
     }
+    if (monoAction && reservation) reservation.state = 'loading';
     const result = await context.backend.call(names[args.action], parameters, signal);
     const record = structured(result), observation = record.normalized_result || record;
     if (args.action === 'status') {
       const observer = context.javaObservers.get(args.sessionId);
-      const failure = observer?.scriptId && (observation.messages || []).find(message => message.script_id === observer.scriptId && (message.type === 'error' || ['java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'native-hook-error', 'module-wait-timeout'].includes(message.payload?.event)));
+      const failure = observer?.scriptId && (observation.messages || []).find(message => message.script_id === observer.scriptId && (message.type === 'error' || ['java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'managed-setup-error', 'native-hook-error', 'module-wait-timeout'].includes(message.payload?.event)));
       if (failure) {
         // long: spawn的Java安装会延后到resume；只处理当前脚本的晚到失败，旧脚本历史消息不能撤销新观测。
         reservation = observer; loadedId = observer.scriptId; managedFailure = true;
@@ -281,7 +288,7 @@ export async function frida(context, args) {
       if (reservation) { reservation.scriptId = loadedId; reservation.state = 'loaded'; }
     }
     if (generated || javaAction) {
-      const failure = (observation.messages || []).find(message => (!loadedId || !message.script_id || message.script_id === loadedId) && (message.type === 'error' || ['java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'native-hook-error'].includes(message.payload?.event)));
+      const failure = (observation.messages || []).find(message => (!loadedId || !message.script_id || message.script_id === loadedId) && (message.type === 'error' || ['java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'managed-setup-error', 'native-hook-error'].includes(message.payload?.event)));
       if (failure) {
         const error = new Error('观测脚本加载失败：' + String(failure.description || failure.stack || failure.payload?.description || failure.payload?.event || '查看error.json').slice(0, 800));
         error.diagnostic = result; throw error;

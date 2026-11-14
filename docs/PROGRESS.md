@@ -1,6 +1,6 @@
 # 实施进展
 
-截至2026-11-14，GitHub/npm `0.5.2`均已发布。当前工作树新增Flutter静态协议候选、HBC99实验反汇编、WebView公网响应验收、Compose位置证据和真实MAUI store提取；这些增量尚未发行，确切证据与仍未完成项以[本轮进展](CURRENT-INCREMENT.md)为准。下文保留0.5.2发行时快照，不能替代最新增量状态。
+截至2026-11-14，GitHub/npm `0.5.3`均已发布。动态关联、Mono方法观测和WebView initiator增量已纳入本版本；确切证据与仍未完成项以[本轮进展](CURRENT-INCREMENT.md)为准。下文保留历史发行快照，不能替代最新增量状态。
 
 ## 本批已落地
 

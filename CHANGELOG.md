@@ -1,6 +1,12 @@
 # 变更记录
 
-## 未发行 — 2026-11-14
+## 0.5.3 — 2026-11-14
+
+- trace-java-group：最多8个方法同agent线程栈与JNI同对象回复；重复复用拒绝猜配、TTL丢失身份后停止确定配对，RN Promise与普通Java逆序跨线程样本通过。Flutter/Compose在当前Android16触发JNI transition崩溃，明确未验收。
+- trace-mono实验固定适配：Mono ARM64已加载静态非泛型Int32方法，完整签名/MVID/MethodDef/JIT回核，拒绝byref；真实MAUI NoInlining样本捕获2、7→46，原Release只定位未捕获调用。
+- WebView保存有界CDP initiator栈与0开始坐标，同会话scriptId连接已采集SHA/AST；自有拦截页面验证真实fetch，不扩大公网稳定性结论。
+- 修复外置workspace的Java/JNI bridge编译projectRoot；新增动态调用说明与失败边界回归，仍为20工具。
+- 发布前质量门：57项自动测试、源码语法检查、npm包清单和隔离tarball实装验收通过；GitHub/npm均发布`0.5.3`。
 
 - framework.channels：同APK两份ARM64库哈希核对后，关联Blutter Dart调用模板、smali channel注册和handler方法名比较；始终标partial，不声称动态因果或完整数据流。
 - Hermes 97–99显式allowExperimental实验反汇编；真实RNTester HBC99产出非空汇编，保留上游警告，未知100继续拒绝。

@@ -53,6 +53,8 @@ query是原始类名前缀，建议限定包名。读取原始DEX的kotlin.Metad
 
 输入XML限制单个2MiB/累计32MiB/最多5000文件与10000条声明；拒绝DOCTYPE/ENTITY避免XML外部实体。失败/过预算保留warning/partial。依赖Python标准库；APK路径需apktool和Java，解码工程不需REA。
 
+新增实验Java分组/Mono运行观测、WebView initiator调用栈、实际成功与兼容阻塞见[动态关联](DYNAMIC-CORRELATION.md)。
+
 ## 自定义ClassLoader
 
 1. attach或spawn取得session_id，执行`frida.java-loaders`。

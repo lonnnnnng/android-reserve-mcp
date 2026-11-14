@@ -18,7 +18,10 @@ let xml = (await fs.readFile(project, 'utf8')).replaceAll('\u005c', '/');
 xml = xml.replace(/<TargetFrameworks>[^<]+<\/TargetFrameworks>/, '<TargetFrameworks>net10.0-android</TargetFrameworks>');
 xml = xml.replace('</Project>', '<PropertyGroup><EnableDefaultXamlItems>false</EnableDefaultXamlItems><EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems></PropertyGroup><ItemGroup><MauiXaml Remove="**/*.xaml"/><Compile Remove="MainPage.xaml.cs;AppShell.xaml.cs"/></ItemGroup></Project>');
 await fs.writeFile(project, xml);
-await fs.copyFile(fileURLToPath(new URL('../examples/fixtures/maui-app.cs', import.meta.url)), path.join(target, 'App.xaml.cs'));
+let app = await fs.readFile(fileURLToPath(new URL('../examples/fixtures/maui-app.cs', import.meta.url)), 'utf8');
+// long: 动态验收必须单列禁止内联的样本，不能用它冒充原Release APK的调用覆盖率。
+if (process.argv.includes('--dynamic')) app = app.replace('public static int ReserveAdd', '[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]\n    public static int ReserveAdd').replace('RESERVE_MAUI_REAL_V05', 'RESERVE_MAUI_DYNAMIC_V06');
+await fs.writeFile(path.join(target, 'App.xaml.cs'), app);
 const manifest = path.join(target, 'Platforms/Android/AndroidManifest.xml');
 await fs.writeFile(manifest, (await fs.readFile(manifest, 'utf8')).replace(/android:(?:roundIcon|icon)="[^"]*"/g, ''));
 const java = process.env.JAVA_HOME || checked(await run('/usr/libexec/java_home', ['-v', '21']), 'JDK21').stdout.trim();

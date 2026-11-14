@@ -11,6 +11,16 @@ import { withJavaFactory } from '../helpers/java-loaders.js';
 import { run, tool } from '../src/core/process.js';
 
 const member = (split, options={}) => ({ source:split||'base',manifest:{package:'dev.owned.app',version_code:'7',version_code_major:'1',split,is_feature_split:!!split,uses_splits:[],...options},signature:{verified:true,certificates:['a'.repeat(64)]} });
+test('同CDP会话scriptId接到捕获哈希，Java跨线程只按JNI对象证据关联',()=>{
+  const graph=indexEvidence('job',[{file:'network.json',value:{sessionId:'web',processEpoch:'epoch',requests:[{requestId:'1',initiator:{frames:[{scriptId:'3',scriptObserved:true,lineNumber:1,columnNumber:2},{scriptId:'unknown',scriptObserved:false}]}}]}},{file:'source.json',value:{sessionId:'web',processEpoch:'epoch',kind:'js',sha256:'1'.repeat(64),metadata:{scriptId:'3'}}},{file:'frida.json',value:{session_id:'s',script_id:'agent',traceId:'trace',event:'java-exit',invocationId:'reply',parentInvocationId:'parent',correlation:{association:'jni-isSameObject',requestId:'request',state:'reply-returned'}}}]);
+  assert.equal(graph.nodes.filter(n=>n.kind==='webview-script').length,1);assert.ok(graph.edges.some(e=>e.relation==='captured-script-content'));assert.ok(graph.edges.some(e=>e.relation==='reply-returned-for-object'));assert.ok(graph.edges.some(e=>e.relation==='within-java-original-call'));
+});
+test('Mono运行身份按会话/MVID/token关联，抛出的Java回复不标记正常返回',()=>{
+  const mono={event:'managed-exit',runtime:'mono',association:'mono-jit-info-method-identity',imageGuid:'mvid',metadataToken:'0x6000001',fullName:'Owned.App:Add (int,int)',invocationId:'call',sequence:1};
+  const graph=indexEvidence('job',[{file:'result.json',value:{session_id:'session',messages:[{script_id:'a',payload:mono},{script_id:'b',payload:mono},{script_id:'a',payload:{event:'java-exit',invocationId:'reply',sequence:2,correlation:{association:'jni-isSameObject',requestId:'request',state:'reply-threw'}}}]}}]);
+  assert.equal(graph.nodes.filter(n=>n.kind==='managed-method').length,2);assert.equal(graph.edges.filter(e=>e.relation==='observes-resolved-managed-method').length,2);
+  assert.ok(graph.edges.some(e=>e.relation==='reply-threw-for-object'));assert.ok(!graph.edges.some(e=>e.relation==='reply-returned-for-object'));
+});
 test('Flutter协议候选与Compose指令位置进入证据图，静态关系不冒充运行调用',()=>{
   const graph=indexEvidence('owned',[{file:'result.json',value:{kind:'flutter-channel-candidates',partial:true,input:{sha256:'a'.repeat(64)},analysisJobId:'aot-job',matches:[{channel:'owned',method:'ping',dart:{source:{file:'asm/main.dart',line:3}},android:{source:{file:'smali/Owned.smali',line:8},handlerClass:'LOwned;',handlerMethod:'call()V'},registration:{setter:'b'}}]}},{file:'kotlin.json',artifactHash:'b'.repeat(64),value:{className:'Owned',composeSignals:[{jvmSignature:'render(Landroidx/compose/runtime/Composer;)V',signals:{'state-read-candidate':1},callsites:[{signal:'state-read-candidate',dexOffset:42,targetClass:'androidx.compose.runtime.State',targetSignature:'getValue()Ljava/lang/Object;',offsetUnit:'16-bit-code-unit'}]}]}}]);
   assert.equal(graph.partial,true);assert.ok(graph.edges.some(e=>e.strength==='static-protocol-candidate-not-runtime'));assert.ok(graph.nodes.some(n=>n.kind==='compose-callsite-candidate'&&n.dexOffset===42));assert.equal(graph.nodes.filter(n=>n.kind==='runtime-call').length,0);

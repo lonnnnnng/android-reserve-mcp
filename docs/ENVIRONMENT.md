@@ -1,6 +1,6 @@
 # 环境与完整能力依赖
 
-适用版本：android-reserve-mcp 0.5.1候选。核验日期：2026-11-14。本文同时列出“启动服务”“使用某项能力”和“动态分析”的不同条件。
+已发布版本0.5.3。核验日期：2026-11-14。本文同时列出“启动服务”“使用某项能力”和“动态分析”的不同条件。
 
 ## 1. 宿主环境
 
@@ -156,7 +156,7 @@ Skill 只读开放 `apk-reverse`、`mobile-reverse`、`ida-reverse`、`protocol-
 6. Python `frida-tools` / `frida-ps` 可用于手工排障，但它有自己使用的 Python Frida 版本。CLI 存在或版本不同，不证明 REA binding 与设备端兼容。
 
 7. Java自动观测由本MCP将bridge显式打包。仓库根package.json在npm 11中将`frida@17.26.3`列入`allowScripts`；用`npm install-scripts ls`核对当前项目授权后执行`npm rebuild frida --ignore-scripts=false`。`npm ci --ignore-scripts`会跳过安装脚本；显式rebuild只能执行npm已批准的包脚本。若android-reserve作为另一个项目的依赖，package级allowScripts不会向上游继承；先确认该项目lock中Frida精确版本与integrity，再在该项目批准脚本并核对`npm install-scripts ls`，勿运行全量approve。经本机隔离安装复核，npm11安装tarball会先警告frida@17.26.3未审批，显式按包审批后rebuild成功，Node binding可import且能创建local device对象。该版本只用于宿主bundle编译，REA6.9.0的设备binding/server仍是17.23.2。升级编译器不等于升级server。
-8. 每设备/PID在本服务只允许一个trace-java或trace-jni observer，加载/卸载不确定时close后重建。`spawn`的trace-jni先确认ready再resume；Java方法安装则可能需要resume后loader才就绪。Java.setup最多等30秒，超时事件在status判失败并尝试卸载。任意用户脚本或其他客户端的hook不在冲突检测范围。
+8. 每设备/PID在本服务只允许一个Java/JNI/Mono observer，加载/卸载不确定时close后重建。`spawn`的trace-jni先确认ready再resume；Java方法安装则可能需要resume后loader才就绪。Java.setup最多等30秒，超时事件在status判失败并尝试卸载。任意用户脚本或其他客户端的hook不在冲突检测范围。
 
 **验证边界：** Frida17.23.2在授权POCO自有App上已验证原导出JNI与隐藏动态JNI、标准入口注册/失败/撤销、模块RVA、Java↔Native同调用及卸载关闭。Java栈使用Thread API；隐藏RVA栈仅为FUZZY候选，不使用已在本样本崩溃的ACCURATE路径。更多目标/ABI/Gadget/CheckJNI表、未知loader与异步跨线程未完整验收。raw load不自动提供Java。具体记录见VALIDATION.md。
 
@@ -219,3 +219,7 @@ Skill 只读开放 `apk-reverse`、`mobile-reverse`、`ida-reverse`、`protocol-
 | evidence | Node、当前workspace已完成任务的固定报告；无需数据库或服务 |
 
 固定引擎路径、环境变量和下载校验见[ENGINE-SETUP.md](ENGINE-SETUP.md)新增章节，详细操作与预算见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)。开发smoke还需样本构建工具，不能混成普通分析的启动条件。未安装引擎不阻止其他独立功能启动。
+
+## 新增动态关联依赖（未发行）
+
+trace-java-group复用REA6.9.0/Frida17.23.2及现有bridge7.0.13编译条件；不需要额外框架SDK。当前POCO Android16上普通Java与RN Promise通过，Flutter reply与Compose状态入口触发JNI transition错误，不能声称这些框架动态链兼容。trace-mono要求目标加载libmonosgen-2.0.so并导出公开Mono解析/JIT信息API，目前只验ARM64静态非泛型Int32，无byref；CoreCLR/NativeAOT不适用。分析现成MAUI APK无需安装.NET SDK；自有动态样本构建才需私有.NET10/maui-android、JDK21和Android SDK/NDK。WebView initiator仅需原CDP条件，无浏览器或Frida依赖。步骤与边界见[DYNAMIC-CORRELATION.md](DYNAMIC-CORRELATION.md)。

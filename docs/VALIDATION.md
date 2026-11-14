@@ -2,7 +2,16 @@
 
 日期：2026-11-14；宿主macOS arm64。`v0.5.2`已通过GitHub Release发布；以下分开记录`v0.5.1` tag快照、`v0.5.2`发行验证及更早的`v0.5.0`历史；环境版本见ENVIRONMENT.md。
 
-当前工作树的Flutter静态协议候选、WebView公网响应、HBC99实验反汇编、Compose位置证据和真实MAUI提取结果见[本轮进展](CURRENT-INCREMENT.md)。下文为发行历史；0.5.2中未通过的项不能据此推翻新证据，新证据也不扩大为全技术栈支持。
+当前`0.5.3`的动态关联、Flutter/Compose兼容边界和真实MAUI结果见[本轮进展](CURRENT-INCREMENT.md)。下文保留发行历史；旧版本中未通过的项不能据此推翻新证据，新证据也不扩大为全技术栈支持。
+
+## 当前未发行动态关联
+
+- 普通Java两请求跨线程逆序回复、同对象配对与父子原调用范围真机通过；对象复用/TTL历史丢失/失败清理另有回归。
+- RNTester关闭R8的独立APK，实际Java request→Promise resolve("result")→原返回通过；原R8 APK因Activity Result重复key退出，保留失败。未验证Hermes then、reject、完整JSI/Fabric。
+- Mono .NET10 ARM64 AOT：原Release仅定位；独立NoInlining APK通过完整签名/MVID/token/JIT回核，真实按钮触发2、7→46。只支持无byref的静态Int32窄ABI。
+- WebView自有拦截页面通过fetch initiator/scriptId/源码SHA/AST与正文46；不是公网稳定性新结论。
+- Flutter Reply、Compose对象/整数状态入口注入均在当前Android16触发JNI transition崩溃，未通过，不提升支持声明。
+- 原Java/JNI真实设备回归与外置workspace trace-jni编译通过。配置、详细边界与关键证据见[DYNAMIC-CORRELATION.md](DYNAMIC-CORRELATION.md)及其JSON证据；本节不代表npm发行。
 
 ## 本地 `v0.5.1` tag 快照验证
 

@@ -51,6 +51,10 @@ Java模板显式导入固定bridge和本项目observer，方法选择只以JSON�
 
 Java/Native同agent共享按OS线程隔离的原调用栈，原方法执行前后push/pop调用ID，Native进入时固定关联；观测辅助JNI不纳入业务范围。跨线程不继承、不按时间猜测。Java栈交给Android自身Thread API，避免直接依赖ART内部StackVisitor布局。0.4.0独立JNI observer在vm.perform中获取标准函数表，不等待app loader，区分尝试与实际返回；同进程不可同时启用Java/JNI observer，发现地址后先unload再复用RVA。RVA栈仅为FUZZY候选。BaseDexClassLoader唯一selector已接入；未知loader/完整绑定快照和外部客户端hook不在覆盖内。
 
+## 新增动态关联（未发行）
+
+调用及预算见[DYNAMIC-CORRELATION.md](DYNAMIC-CORRELATION.md)。helpers/java-group-observer.js在一个agent中共享Java原调用栈和有界JNI对象身份历史；对象复用拒绝猜配，TTL后当前脚本停止确定关联。Java/JNI/Mono共用进程所有权。helpers/mono-observer.js通过Mono公开API解析精确静态Int32方法、MVID/token和JIT info回核后观察原生入口；它可能准备JIT/AOT入口，必须显式许可，不接受任意managed脚本或业务方法调用。证据图中的managed-method仅为会话内运行时身份，不自动绑定磁盘DLL哈希。WebView initiator帧仅按同CDP会话/scriptId连接脚本正文，不跨Frida会话猜因果。
+
 ## 不涵盖的能力
 
 本服务未转发REA全部可选参数。当前不提供任意shell、MCP自动安装/卸载/提权/绕过脚本、完整全程序数据流、完整框架源码恢复或REA全部view。JNI静态候选不证明动态注册；Native伪代码有provider覆盖限制，DEX xref不穷尽反射/动态加载。开发验收脚本可在显式serial上安装/启停自有测试App，不属于MCP默认工具行为。

@@ -1,0 +1,767 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-14",
+  "releaseStatus": "unreleased-source",
+  "environment": {
+    "device": "POCO F2 Pro",
+    "serial": "31936bb6",
+    "android": 16,
+    "abi": "arm64-v8a",
+    "rea": "6.9.0",
+    "server": "17.23.2",
+    "fridaJavaBridge": "7.0.13",
+    "fridaCompile": "19.1.0"
+  },
+  "java": {
+    "status": "passed-two-reverse-thread-replies",
+    "apkSha256": "db6b4d7c9269c7e2301847a483adb5a97fbc473b896904ec557d2c675e83a49a",
+    "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+    "scriptSha256": "5035082e66be9debf65b50e4b61418a9b82b423339c6066d3ee901153e59de37",
+    "events": [
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 1,
+        "timestamp": 1794651847444,
+        "event": "java-group-ready",
+        "loader": {
+          "kind": "default-app-classloader"
+        },
+        "hooks": [
+          {
+            "id": "submit",
+            "methodKey": "dev.androidreserve.fixture.MainActivity.submit(int,dev.androidreserve.fixture.MainActivity$OwnedReply):void"
+          },
+          {
+            "id": "inner",
+            "methodKey": "dev.androidreserve.fixture.MainActivity.inner(int):int"
+          },
+          {
+            "id": "done",
+            "methodKey": "dev.androidreserve.fixture.MainActivity$OwnedReply.done(int):int"
+          }
+        ],
+        "maxEvents": 100,
+        "maxTrackedObjects": 128,
+        "objectTtlMs": 30000,
+        "experimental": true,
+        "limitation": "已验普通Java与RN Promise边界；当前Android16 Flutter reply存在原方法回调崩溃，不能据此承诺任意框架方法兼容"
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 3,
+        "timestamp": 1794651847835,
+        "event": "java-enter",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:1",
+        "parentInvocationId": null,
+        "hookId": "submit",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.submit(int,dev.androidreserve.fixture.MainActivity$OwnedReply):void",
+        "threadId": 8464,
+        "arguments": [
+          {
+            "kind": "number",
+            "value": 9
+          },
+          {
+            "kind": "object",
+            "className": "dev.androidreserve.fixture.MainActivity$OwnedReply",
+            "valueOmitted": true
+          }
+        ],
+        "correlation": {
+          "state": "request",
+          "requestId": "643a9020-6262-48db-8bce-17102c6e8157:java:1",
+          "objectId": "643a9020-6262-48db-8bce-17102c6e8157:object:1",
+          "group": "owned"
+        }
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 5,
+        "timestamp": 1794651847835,
+        "event": "java-enter",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:2",
+        "parentInvocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:1",
+        "hookId": "inner",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.inner(int):int",
+        "threadId": 8464,
+        "arguments": [
+          {
+            "kind": "number",
+            "value": 9
+          }
+        ]
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 6,
+        "timestamp": 1794651847835,
+        "event": "java-exit",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:2",
+        "parentInvocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:1",
+        "hookId": "inner",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.inner(int):int",
+        "threadId": 8464,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "number",
+          "value": 46
+        },
+        "exception": null
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 7,
+        "timestamp": 1794651847836,
+        "event": "java-exit",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:1",
+        "parentInvocationId": null,
+        "hookId": "submit",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.submit(int,dev.androidreserve.fixture.MainActivity$OwnedReply):void",
+        "threadId": 8464,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "void"
+        },
+        "exception": null
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 9,
+        "timestamp": 1794651847837,
+        "event": "java-enter",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:3",
+        "parentInvocationId": null,
+        "hookId": "submit",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.submit(int,dev.androidreserve.fixture.MainActivity$OwnedReply):void",
+        "threadId": 8464,
+        "arguments": [
+          {
+            "kind": "number",
+            "value": 10
+          },
+          {
+            "kind": "object",
+            "className": "dev.androidreserve.fixture.MainActivity$OwnedReply",
+            "valueOmitted": true
+          }
+        ],
+        "correlation": {
+          "state": "request",
+          "requestId": "643a9020-6262-48db-8bce-17102c6e8157:java:3",
+          "objectId": "643a9020-6262-48db-8bce-17102c6e8157:object:2",
+          "group": "owned"
+        }
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 11,
+        "timestamp": 1794651847837,
+        "event": "java-enter",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:4",
+        "parentInvocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:3",
+        "hookId": "inner",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.inner(int):int",
+        "threadId": 8464,
+        "arguments": [
+          {
+            "kind": "number",
+            "value": 10
+          }
+        ]
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 12,
+        "timestamp": 1794651847837,
+        "event": "java-exit",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:4",
+        "parentInvocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:3",
+        "hookId": "inner",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.inner(int):int",
+        "threadId": 8464,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "number",
+          "value": 47
+        },
+        "exception": null
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 13,
+        "timestamp": 1794651847837,
+        "event": "java-exit",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:3",
+        "parentInvocationId": null,
+        "hookId": "submit",
+        "methodKey": "dev.androidreserve.fixture.MainActivity.submit(int,dev.androidreserve.fixture.MainActivity$OwnedReply):void",
+        "threadId": 8464,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "void"
+        },
+        "exception": null
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 15,
+        "timestamp": 1794651847940,
+        "event": "java-enter",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:5",
+        "parentInvocationId": null,
+        "hookId": "done",
+        "methodKey": "dev.androidreserve.fixture.MainActivity$OwnedReply.done(int):int",
+        "threadId": 8526,
+        "arguments": [
+          {
+            "kind": "number",
+            "value": 47
+          }
+        ],
+        "correlation": {
+          "state": "reply-attempt",
+          "requestId": "643a9020-6262-48db-8bce-17102c6e8157:java:3",
+          "requestThreadId": 8464,
+          "objectId": "643a9020-6262-48db-8bce-17102c6e8157:object:2",
+          "group": "owned",
+          "association": "jni-isSameObject"
+        }
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 16,
+        "timestamp": 1794651847941,
+        "event": "java-exit",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:5",
+        "parentInvocationId": null,
+        "hookId": "done",
+        "methodKey": "dev.androidreserve.fixture.MainActivity$OwnedReply.done(int):int",
+        "threadId": 8526,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "number",
+          "value": 47
+        },
+        "exception": null,
+        "correlation": {
+          "state": "reply-returned",
+          "requestId": "643a9020-6262-48db-8bce-17102c6e8157:java:3",
+          "requestThreadId": 8464,
+          "objectId": "643a9020-6262-48db-8bce-17102c6e8157:object:2",
+          "group": "owned",
+          "association": "jni-isSameObject"
+        }
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 18,
+        "timestamp": 1794651848739,
+        "event": "java-enter",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:6",
+        "parentInvocationId": null,
+        "hookId": "done",
+        "methodKey": "dev.androidreserve.fixture.MainActivity$OwnedReply.done(int):int",
+        "threadId": 8525,
+        "arguments": [
+          {
+            "kind": "number",
+            "value": 46
+          }
+        ],
+        "correlation": {
+          "state": "reply-attempt",
+          "requestId": "643a9020-6262-48db-8bce-17102c6e8157:java:1",
+          "requestThreadId": 8464,
+          "objectId": "643a9020-6262-48db-8bce-17102c6e8157:object:1",
+          "group": "owned",
+          "association": "jni-isSameObject"
+        }
+      },
+      {
+        "traceId": "643a9020-6262-48db-8bce-17102c6e8157",
+        "pid": 8464,
+        "sequence": 19,
+        "timestamp": 1794651848741,
+        "event": "java-exit",
+        "invocationId": "643a9020-6262-48db-8bce-17102c6e8157:java:6",
+        "parentInvocationId": null,
+        "hookId": "done",
+        "methodKey": "dev.androidreserve.fixture.MainActivity$OwnedReply.done(int):int",
+        "threadId": 8525,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "number",
+          "value": 46
+        },
+        "exception": null,
+        "correlation": {
+          "state": "reply-returned",
+          "requestId": "643a9020-6262-48db-8bce-17102c6e8157:java:1",
+          "requestThreadId": 8464,
+          "objectId": "643a9020-6262-48db-8bce-17102c6e8157:object:1",
+          "group": "owned",
+          "association": "jni-isSameObject"
+        }
+      }
+    ]
+  },
+  "rn": {
+    "status": "passed-java-promise-boundary-only",
+    "upstreamCommit": "70f655a4c06b3dcfbc4a2d8cf55bd2deb644a6a3",
+    "buildChange": "R8 disabled for dynamic sample; original R8 APK launcher key collision retained as failure",
+    "apkSha256": "b380efd3d054d114c6ca66d26a902332df8850260dd1219ad4e4897147bc3d54",
+    "scriptSha256": "a4c11b4524214a126cb8b5358db2ff64eb65c86d55a5d45a6c3eef5947c01ca1",
+    "traceId": "f086fcd2-556c-4a26-9e19-302d8964de16",
+    "events": [
+      {
+        "traceId": "f086fcd2-556c-4a26-9e19-302d8964de16",
+        "pid": 9023,
+        "sequence": 1,
+        "timestamp": 1794652264507,
+        "event": "java-group-ready",
+        "loader": {
+          "kind": "default-app-classloader"
+        },
+        "hooks": [
+          {
+            "id": "request",
+            "methodKey": "com.facebook.fbreact.specs.SampleTurboModule.getValueWithPromise(boolean,com.facebook.react.bridge.Promise):void"
+          },
+          {
+            "id": "resolve",
+            "methodKey": "com.facebook.react.bridge.PromiseImpl.resolve(java.lang.Object):void"
+          },
+          {
+            "id": "reject",
+            "methodKey": "com.facebook.react.bridge.PromiseImpl.reject(java.lang.String,java.lang.String,java.lang.Throwable):void"
+          }
+        ],
+        "maxEvents": 40,
+        "maxTrackedObjects": 128,
+        "objectTtlMs": 30000,
+        "experimental": true,
+        "limitation": "已验普通Java与RN Promise边界；当前Android16 Flutter reply存在原方法回调崩溃，不能据此承诺任意框架方法兼容"
+      },
+      {
+        "traceId": "f086fcd2-556c-4a26-9e19-302d8964de16",
+        "pid": 9023,
+        "sequence": 3,
+        "timestamp": 1794652265084,
+        "event": "java-enter",
+        "invocationId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:1",
+        "parentInvocationId": null,
+        "hookId": "request",
+        "methodKey": "com.facebook.fbreact.specs.SampleTurboModule.getValueWithPromise(boolean,com.facebook.react.bridge.Promise):void",
+        "threadId": 9047,
+        "arguments": [
+          {
+            "kind": "boolean",
+            "value": false
+          },
+          {
+            "kind": "object",
+            "className": "com.facebook.react.bridge.PromiseImpl",
+            "valueOmitted": true
+          }
+        ],
+        "correlation": {
+          "state": "request",
+          "requestId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:1",
+          "objectId": "f086fcd2-556c-4a26-9e19-302d8964de16:object:1",
+          "group": "promise"
+        }
+      },
+      {
+        "traceId": "f086fcd2-556c-4a26-9e19-302d8964de16",
+        "pid": 9023,
+        "sequence": 5,
+        "timestamp": 1794652265085,
+        "event": "java-enter",
+        "invocationId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:2",
+        "parentInvocationId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:1",
+        "hookId": "resolve",
+        "methodKey": "com.facebook.react.bridge.PromiseImpl.resolve(java.lang.Object):void",
+        "threadId": 9047,
+        "arguments": [
+          {
+            "kind": "object",
+            "className": "java.lang.String",
+            "valueOmitted": true,
+            "value": "result"
+          }
+        ],
+        "correlation": {
+          "state": "reply-attempt",
+          "requestId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:1",
+          "requestThreadId": 9047,
+          "objectId": "f086fcd2-556c-4a26-9e19-302d8964de16:object:1",
+          "group": "promise",
+          "association": "jni-isSameObject"
+        }
+      },
+      {
+        "traceId": "f086fcd2-556c-4a26-9e19-302d8964de16",
+        "pid": 9023,
+        "sequence": 6,
+        "timestamp": 1794652265086,
+        "event": "java-exit",
+        "invocationId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:2",
+        "parentInvocationId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:1",
+        "hookId": "resolve",
+        "methodKey": "com.facebook.react.bridge.PromiseImpl.resolve(java.lang.Object):void",
+        "threadId": 9047,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "void"
+        },
+        "exception": null,
+        "correlation": {
+          "state": "reply-returned",
+          "requestId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:1",
+          "requestThreadId": 9047,
+          "objectId": "f086fcd2-556c-4a26-9e19-302d8964de16:object:1",
+          "group": "promise",
+          "association": "jni-isSameObject"
+        }
+      },
+      {
+        "traceId": "f086fcd2-556c-4a26-9e19-302d8964de16",
+        "pid": 9023,
+        "sequence": 7,
+        "timestamp": 1794652265086,
+        "event": "java-exit",
+        "invocationId": "f086fcd2-556c-4a26-9e19-302d8964de16:java:1",
+        "parentInvocationId": null,
+        "hookId": "request",
+        "methodKey": "com.facebook.fbreact.specs.SampleTurboModule.getValueWithPromise(boolean,com.facebook.react.bridge.Promise):void",
+        "threadId": 9047,
+        "outcome": "return",
+        "returnValue": {
+          "kind": "void"
+        },
+        "exception": null
+      }
+    ],
+    "notValidated": [
+      "reject branch",
+      "Hermes then execution",
+      "JSI/Fabric full causal chain"
+    ]
+  },
+  "mono": {
+    "status": "passed-no-inlining-sample-only",
+    "apkSha256": "7f810ce1d4293dd5c3ccb5ed2665f0ca78aa18cf6cad2db11252027516e7d018",
+    "scriptSha256": "ddf25b92bb4e4ef1ff268d83842614a0cd6270db1e472067f91398ac41b4ca5b",
+    "events": [
+      {
+        "traceId": "4f0bfd5e-dfe9-4b73-bd0d-d250ce198932",
+        "pid": 8916,
+        "sequence": 1,
+        "event": "managed-hook-installed",
+        "runtime": "mono",
+        "assemblyName": "ReserveMaui",
+        "imageGuid": "97E90187-5E6E-453F-8305-EB75C8532E80",
+        "namespace": "ReserveMaui",
+        "className": "App",
+        "methodName": "ReserveAdd",
+        "fullName": "ReserveMaui.App:ReserveAdd (int,int)",
+        "argumentTypes": [
+          "int32",
+          "int32"
+        ],
+        "returnType": "int32",
+        "static": true,
+        "metadataToken": "0x6000003",
+        "methodHandle": "0xb400006f32536ab8",
+        "address": "0x6d5656e5d0",
+        "module": "libaot-ReserveMaui.dll.so",
+        "rva": "0x45d0",
+        "association": "mono-jit-info-method-identity",
+        "maxEvents": 10,
+        "limitation": "ARM64静态非泛型Int32边界；内联调用可能不可见，未恢复UI/异步托管因果或异常终态"
+      },
+      {
+        "traceId": "4f0bfd5e-dfe9-4b73-bd0d-d250ce198932",
+        "pid": 8916,
+        "sequence": 2,
+        "event": "managed-enter",
+        "invocationId": "4f0bfd5e-dfe9-4b73-bd0d-d250ce198932:managed:1",
+        "threadId": 8916,
+        "runtime": "mono",
+        "assemblyName": "ReserveMaui",
+        "imageGuid": "97E90187-5E6E-453F-8305-EB75C8532E80",
+        "namespace": "ReserveMaui",
+        "className": "App",
+        "methodName": "ReserveAdd",
+        "fullName": "ReserveMaui.App:ReserveAdd (int,int)",
+        "argumentTypes": [
+          "int32",
+          "int32"
+        ],
+        "returnType": "int32",
+        "static": true,
+        "metadataToken": "0x6000003",
+        "methodHandle": "0xb400006f32536ab8",
+        "address": "0x6d5656e5d0",
+        "module": "libaot-ReserveMaui.dll.so",
+        "rva": "0x45d0",
+        "association": "mono-jit-info-method-identity",
+        "arguments": [
+          2,
+          7
+        ]
+      },
+      {
+        "traceId": "4f0bfd5e-dfe9-4b73-bd0d-d250ce198932",
+        "pid": 8916,
+        "sequence": 3,
+        "event": "managed-exit",
+        "invocationId": "4f0bfd5e-dfe9-4b73-bd0d-d250ce198932:managed:1",
+        "threadId": 8916,
+        "runtime": "mono",
+        "assemblyName": "ReserveMaui",
+        "imageGuid": "97E90187-5E6E-453F-8305-EB75C8532E80",
+        "namespace": "ReserveMaui",
+        "className": "App",
+        "methodName": "ReserveAdd",
+        "fullName": "ReserveMaui.App:ReserveAdd (int,int)",
+        "argumentTypes": [
+          "int32",
+          "int32"
+        ],
+        "returnType": "int32",
+        "static": true,
+        "metadataToken": "0x6000003",
+        "methodHandle": "0xb400006f32536ab8",
+        "address": "0x6d5656e5d0",
+        "module": "libaot-ReserveMaui.dll.so",
+        "rva": "0x45d0",
+        "association": "mono-jit-info-method-identity",
+        "outcome": "return",
+        "returnValue": 46
+      }
+    ],
+    "originalRelease": {
+      "apkSha256": "57847fa6134ab32c1ac9e45ea49bd591216f150750b357028ab52e9687345235",
+      "status": "resolved-only-no-call-observed",
+      "module": "libaot-ReserveMaui.dll.so",
+      "rva": "0x45d0"
+    }
+  },
+  "webview": {
+    "status": "passed-owned-intercepted-response-not-public-network",
+    "requestId": "2374.6",
+    "sessionId": "e6dd7faa-9423-4188-9549-5fcf2882667d",
+    "processEpoch": "ebd63acf-91c2-4b9f-91e7-f764f82e825b:10993500",
+    "initiator": {
+      "type": "script",
+      "coordinateBase": 0,
+      "frames": [
+        {
+          "scriptId": "3",
+          "functionName": "sendOwnedRequest",
+          "url": "https://owned-fixture.invalid/main.js",
+          "lineNumber": 1,
+          "columnNumber": 28,
+          "stackDepth": 0,
+          "scriptObserved": true
+        }
+      ],
+      "partial": false
+    },
+    "sourceSha256": "9a15e332d8d657a157d25d32ef93848cda9eaea80c0c42f18c033a27c127ac81",
+    "bodyResult": 46,
+    "sourceJob": "1cc2defe-30d0-46bd-8247-e63874b252a8",
+    "networkJob": "701f7fd3-4e8b-4f79-bbdc-545a16bf172b",
+    "mergeJob": "393aa6ce-637e-4dfa-ab32-47d265a3ffc0"
+  },
+  "flutter": {
+    "status": "failed-process-detached",
+    "traceId": "ab32fab9-3fd1-4f56-ac0c-a78a9eebabb6",
+    "events": [
+      {
+        "traceId": "ab32fab9-3fd1-4f56-ac0c-a78a9eebabb6",
+        "pid": 7445,
+        "sequence": 1,
+        "timestamp": 1794651021208,
+        "event": "java-group-ready",
+        "loader": {
+          "kind": "default-app-classloader"
+        },
+        "hooks": [
+          {
+            "id": "incoming",
+            "methodKey": "io.flutter.plugin.common.MethodChannel$IncomingMethodCallHandler.onMessage(java.nio.ByteBuffer,io.flutter.plugin.common.BinaryMessenger$BinaryReply):void"
+          },
+          {
+            "id": "handler",
+            "methodKey": "com.example.platformchannel.MainActivity$2.onMethodCall(io.flutter.plugin.common.MethodCall,io.flutter.plugin.common.MethodChannel$Result):void"
+          },
+          {
+            "id": "reply",
+            "methodKey": "io.flutter.embedding.engine.dart.DartMessenger$Reply.reply(java.nio.ByteBuffer):void"
+          }
+        ],
+        "maxEvents": 80,
+        "maxTrackedObjects": 128,
+        "objectTtlMs": 30000
+      },
+      {
+        "traceId": "ab32fab9-3fd1-4f56-ac0c-a78a9eebabb6",
+        "pid": 7445,
+        "sequence": 2,
+        "timestamp": 1794651021700,
+        "event": "java-call-observed",
+        "invocationId": "ab32fab9-3fd1-4f56-ac0c-a78a9eebabb6:java:1",
+        "parentInvocationId": null,
+        "hookId": "reply",
+        "methodKey": "io.flutter.embedding.engine.dart.DartMessenger$Reply.reply(java.nio.ByteBuffer):void",
+        "threadId": 7445
+      },
+      {
+        "traceId": "ab32fab9-3fd1-4f56-ac0c-a78a9eebabb6",
+        "pid": 7445,
+        "sequence": 3,
+        "timestamp": 1794651021700,
+        "event": "java-enter",
+        "invocationId": "ab32fab9-3fd1-4f56-ac0c-a78a9eebabb6:java:1",
+        "parentInvocationId": null,
+        "hookId": "reply",
+        "methodKey": "io.flutter.embedding.engine.dart.DartMessenger$Reply.reply(java.nio.ByteBuffer):void",
+        "threadId": 7445,
+        "arguments": [
+          {
+            "kind": "null",
+            "value": null
+          }
+        ],
+        "correlation": {
+          "state": "unmatched-reply",
+          "group": "flutter-binary"
+        }
+      }
+    ]
+  },
+  "compose": {
+    "objectState": {
+      "status": "failed-process-detached",
+      "traceId": "a49aee0c-57ee-4cbf-9b1e-858696be3e1f",
+      "events": [
+        {
+          "traceId": "a49aee0c-57ee-4cbf-9b1e-858696be3e1f",
+          "pid": 7645,
+          "sequence": 1,
+          "timestamp": 1794651130296,
+          "event": "java-group-ready",
+          "loader": {
+            "kind": "default-app-classloader"
+          },
+          "hooks": [
+            {
+              "id": "click",
+              "methodKey": "dev.androidreserve.compose.OwnedCounter.onClick():void"
+            },
+            {
+              "id": "state-write",
+              "methodKey": "androidx.compose.runtime.SnapshotMutableStateImpl.setValue(java.lang.Object):void"
+            },
+            {
+              "id": "rendered",
+              "methodKey": "dev.androidreserve.compose.OwnedCounter.rendered(int):void"
+            }
+          ],
+          "maxEvents": 100,
+          "maxTrackedObjects": 128,
+          "objectTtlMs": 30000,
+          "experimental": true,
+          "limitation": "已验普通Java与RN Promise边界；当前Android16 Flutter reply存在原方法回调崩溃，不能据此承诺任意框架方法兼容"
+        }
+      ]
+    },
+    "intState": {
+      "status": "failed-process-detached",
+      "traceId": "12a00dc4-890d-4fea-9a14-66a180dca885",
+      "events": [
+        {
+          "traceId": "12a00dc4-890d-4fea-9a14-66a180dca885",
+          "pid": 7945,
+          "sequence": 1,
+          "timestamp": 1794651326098,
+          "event": "java-group-ready",
+          "loader": {
+            "kind": "default-app-classloader"
+          },
+          "hooks": [
+            {
+              "id": "click",
+              "methodKey": "dev.androidreserve.compose.OwnedCounter.onClick():void"
+            },
+            {
+              "id": "state-write",
+              "methodKey": "androidx.compose.runtime.SnapshotMutableIntStateImpl.setIntValue(int):void"
+            },
+            {
+              "id": "rendered",
+              "methodKey": "dev.androidreserve.compose.OwnedCounter.rendered(int):void"
+            }
+          ],
+          "maxEvents": 100,
+          "maxTrackedObjects": 128,
+          "objectTtlMs": 30000,
+          "experimental": true,
+          "limitation": "已验普通Java与RN Promise边界；当前Android16 Flutter reply存在原方法回调崩溃，不能据此承诺任意框架方法兼容"
+        },
+        {
+          "traceId": "12a00dc4-890d-4fea-9a14-66a180dca885",
+          "pid": 7945,
+          "sequence": 2,
+          "timestamp": 1794651326720,
+          "event": "java-call-observed",
+          "invocationId": "12a00dc4-890d-4fea-9a14-66a180dca885:java:1",
+          "parentInvocationId": null,
+          "hookId": "click",
+          "methodKey": "dev.androidreserve.compose.OwnedCounter.onClick():void",
+          "threadId": 7945
+        },
+        {
+          "traceId": "12a00dc4-890d-4fea-9a14-66a180dca885",
+          "pid": 7945,
+          "sequence": 3,
+          "timestamp": 1794651326721,
+          "event": "java-enter",
+          "invocationId": "12a00dc4-890d-4fea-9a14-66a180dca885:java:1",
+          "parentInvocationId": null,
+          "hookId": "click",
+          "methodKey": "dev.androidreserve.compose.OwnedCounter.onClick():void",
+          "threadId": 7945,
+          "arguments": []
+        }
+      ]
+    },
+    "intSampleApkSha256": "73eba424e52b25e7e0bab704af0f010ce1b006eeda1dcbef25f99fdc719af351",
+    "status": "not-validated-jni-transition-crash"
+  },
+  "regression": {
+    "automatedTests": 57,
+    "syntax": "passed",
+    "javaDevice": "passed-overloads-java46-jni9-exception-unload-spawn",
+    "jniExternalWorkspaceCompile": "passed"
+  },
+  "deferred": [
+    "Unity",
+    "Unreal",
+    "HarmonyOS NEXT"
+  ]
+}

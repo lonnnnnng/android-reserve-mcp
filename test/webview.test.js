@@ -3,11 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { WebViews,pageSocket,webview } from '../src/core/webview.js';
+import { WebViews,pageSocket,webview,initiatorView } from '../src/core/webview.js';
 import { createContext } from '../src/actions.js';
 import { cdpFixture } from './cdp-fixture.js';
 
 const wait=async(c,started)=>{for(let i=0;i<200;i++){const j=await c.jobs.get(started.id);if(!['queued','running'].includes(j.state))return{job:j,result:j.result?JSON.parse(await fs.readFile(path.join(j.dir,j.result))):null};await new Promise(r=>setTimeout(r,10));}throw new Error('任务超时');};
+test('CDP initiator按真实scriptId/坐标关联，深栈截断不猜测缺失父栈',()=>{
+  const view=initiatorView({type:'script',stack:{callFrames:[{scriptId:'1',functionName:'owned',url:'https://owned.invalid/main.js',lineNumber:2,columnNumber:9}],parentId:{id:'missing'}}});
+  assert.equal(view.frames[0].lineNumber,2);assert.equal(view.coordinateBase,0);assert.equal(view.partial,true);assert.equal(view.frames.length,1);
+});
 test('CDP目标限定本地页面路径，外部URL和歧义ID不被连接',()=>{
   assert.equal(pageSocket({id:'owned',webSocketDebuggerUrl:'ws://localhost/devtools/page/owned'},1234),'ws://127.0.0.1:1234/devtools/page/owned');
   for(const url of ['ws://external.invalid/devtools/page/owned','ws://localhost/devtools/browser/owned','ws://localhost/devtools/page/other','ws://u:p@localhost/devtools/page/owned'])assert.throws(()=>pageSocket({id:'owned',webSocketDebuggerUrl:url},1234));

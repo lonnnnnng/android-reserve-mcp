@@ -5,7 +5,7 @@ import os from 'node:os';
 import { run, tool, checked } from '../src/core/process.js';
 
 export const packageName = 'dev.androidreserve.fixture';
-export async function fixtureApp(root, { dynamicJni = false, dynamicNative = false, customLoader = false, webviewOrigin = null, webviewAssets = null } = {}) {
+export async function fixtureApp(root, { dynamicJni = false, dynamicNative = false, customLoader = false, javaGroup = false, webviewOrigin = null, webviewAssets = null } = {}) {
   if(webviewOrigin&&!/^http:\/\/127\.0\.0\.1:\d+$/.test(webviewOrigin))throw new Error('自有WebView样本只接受本机回环来源');
   const useWebview=!!(webviewOrigin||webviewAssets);
   const encoded=value=>Buffer.from(value).toString('base64');
@@ -41,6 +41,11 @@ public class MainActivity extends android.app.Activity {
  public static int add(int a,int b){return a+b;}
  public static int compute(int a,int b){return nativeAdd(a,b)+37;}
  public static int throwIfNegative(int a){if(a<0)throw new IllegalArgumentException("OWNED_FIXTURE_NEGATIVE");return a+37;}
+ ${javaGroup ? `public static class OwnedReply { public int done(int value){android.util.Log.i("AndroidReserveFixture","GROUP_REPLY="+value);return value;} }
+ // long: 两个请求故意在不同线程逆序回复，只有回调对象身份能正确配对，不能依赖事件先后。
+ public static int inner(int value){return value+37;}
+ public static void submit(final int value,final OwnedReply reply){final int result=inner(value);new Thread(new Runnable(){public void run(){try{Thread.sleep(value==9?900:100);}catch(InterruptedException error){Thread.currentThread().interrupt();}reply.done(result);}},"owned-reply-"+value).start();}
+ private void startOwnedRequests(){submit(9,new OwnedReply());submit(10,new OwnedReply());}` : ''}
  ${loaderSource}
  ${dynamicNative?'public static class DelayedTarget { public static native int delayedAdd(int a,int b); }\n // long: 将自有测试库安排在spawn恢复后再加载，确保等待脚本先于目标模块安装。\n private volatile boolean delayedReady=false;\n private void loadOwnedDelayedNative(){try{System.load(new java.io.File(getApplicationInfo().nativeLibraryDir,"libdelayed.so").getAbsolutePath());delayedReady=true;android.util.Log.i("AndroidReserveFixture","DELAYED_NATIVE_LOADED");}catch(Exception error){android.util.Log.e("AndroidReserveFixture","DELAYED_NATIVE_LOAD_FAILED",error);}}':''}
  ${webServer}
@@ -48,6 +53,7 @@ public class MainActivity extends android.app.Activity {
  ${dynamicJni ? 'public static class DynamicTarget { public static native int dynamicAdd(int a,int b); }\n public static native int registrationExercise();\n public static int runRegistrationCycle(){return registrationExercise();}\n public static int computeDynamic(int a,int b){return DynamicTarget.dynamicAdd(a,b)+37;}\n private int iteration=0;' : ''}
  private final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
  protected void onCreate(android.os.Bundle state){super.onCreate(state);final android.widget.TextView text=new android.widget.TextView(this);setContentView(text);${customLoader?'prepareOwnedLoader();':''}${useWebview?'android.webkit.WebView.setWebContentsDebuggingEnabled(true);android.webkit.WebView web=new android.webkit.WebView(this);web.getSettings().setJavaScriptEnabled(true);web.addJavascriptInterface(new OwnedBridge(),"ownedBridge");web.setWebViewClient(new ' +(webviewAssets?'OwnedWebClient':'android.webkit.WebViewClient')+'());setContentView(web);web.loadUrl('+(webviewAssets?'"https://owned-fixture.invalid/"':JSON.stringify(webviewOrigin+'/'))+');':''}${dynamicNative?'handler.postDelayed(new Runnable(){public void run(){loadOwnedDelayedNative();}},1600);':''}handler.post(new Runnable(){public void run(){int result=compute(2,7);${customLoader?'result=ownedCompute();':''}${dynamicJni ? 'if(iteration++%4==0)android.util.Log.i("AndroidReserveFixture","REGISTRATION_CYCLE="+runRegistrationCycle());result=computeDynamic(2,7);' : ''}${dynamicNative?'if(delayedReady)result=DelayedTarget.delayedAdd(2,7);':''}try{throwIfNegative(-1);}catch(IllegalArgumentException expected){}text.setText("android-reserve-mcp fixture: "+result);handler.postDelayed(this,500);}});}
+ ${javaGroup ? 'protected void onResume(){super.onResume();handler.postDelayed(new Runnable(){public void run(){startOwnedRequests();handler.postDelayed(this,3000);}},1200);}' : ''}
  protected void onDestroy(){handler.removeCallbacksAndMessages(null);super.onDestroy();}
 }`);
   // long: 动态方法放独立内部类，撤销注册不影响原有导出JNI；只有专门验收开启，其他smoke维持原样。
