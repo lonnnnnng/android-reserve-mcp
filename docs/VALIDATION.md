@@ -8,6 +8,7 @@
 - `npm run smoke:release:full` 的完整 tarball 安装、两套 Frida binding 导入、深度 doctor 和 20 个工具协议验收通过。
 - POCO F2 Pro `31936bb6` / Android 16 / ARM64：Compose 扩展 MCP matcher 连续三轮通过，每轮 70 个事件，完成清理、PID 和 ArtMethod 恢复校验；Flutter EventChannel、RN 自有 JSI/Fabric、KMP business App、MAUI long/float 证据均已归档。
 - GitHub Release：https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.4；npm `0.5.4` 待用户执行本次交付命令。
+- GitHub Actions 已调整为只监听 `release.published`；普通 push 和 pull request 不再重复触发 CI，正式发布时执行一次 Ubuntu/macOS 矩阵。
 
 当前`0.5.4`的动态关联、Flutter/Compose兼容边界和真实MAUI结果见[本轮进展](CURRENT-INCREMENT.md)。下文保留发行历史；旧版本中未通过的项不能据此推翻新证据，新证据也不扩大为全技术栈支持。
 

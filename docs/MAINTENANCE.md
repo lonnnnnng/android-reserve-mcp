@@ -47,7 +47,7 @@ npm audit --omit=dev
 npm run check:pack
 ```
 
-smoke 需要完整静态环境并生成自有 APK/临时签名；不会接触设备。生成报告在 output/smoke.json，产物在报告记录的临时目录，均不作为 npm/GitHub 公共文件发布。CI 只运行基础测试和 pack 检查，不承诺完整 Android 工具链或设备验收。
+smoke 需要完整静态环境并生成自有 APK/临时签名；不会接触设备。生成报告在 output/smoke.json，产物在报告记录的临时目录，均不作为 npm/GitHub 公共文件发布。GitHub Actions 只在 `release.published` 事件触发一次，执行 Ubuntu/macOS 的测试与完整安装矩阵；普通 push 和 pull request 不启动 CI。
 
 ## GitHub / npm 发布准备
 

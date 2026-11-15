@@ -1,5 +1,8 @@
 name: CI
-on: [push, pull_request]
+on:
+  # long: 只在正式 GitHub Release 发布后执行一次跨平台发布验收，普通推送和 PR 不启动流水线。
+  release:
+    types: [published]
 jobs:
   test:
     strategy:
