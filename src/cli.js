@@ -25,6 +25,8 @@ function close() {
 }
 process.on('SIGINT', () => { close().finally(() => process.exit(0)); });
 process.on('SIGTERM', () => { close().finally(() => process.exit(0)); });
+// long: stdio客户端正常结束输入时不会触发信号；先走同一份幂等清理，确保shutdown账本和后端资源都有终态。
+process.stdin.on('end', () => { close().finally(() => process.exit(0)); });
 const transport = new StdioServerTransport();
 await server.connect(transport);
 transport.onclose = () => { close().finally(() => process.exit(0)); };

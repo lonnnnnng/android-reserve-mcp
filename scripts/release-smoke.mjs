@@ -86,8 +86,15 @@ try{
   if(connected){try{await client.close();}catch(error){cleanupError=error.message;}}
   if(connected){
     const workspace=path.join(temporary,'workspace');
-    const files=(await fs.readdir(workspace)).filter(name=>/^shutdown-[0-9a-f-]+\.json$/.test(name));
-    const records=await Promise.all(files.map(async name=>({file:name,...JSON.parse(await fs.readFile(path.join(workspace,name),'utf8'))})));
+    // long: client.close() 返回后 sidecar 仍可能在写 shutdown 账本；等待有界时间再判定清理，避免 Ubuntu runner 的退出调度造成假失败。
+    let records=[];
+    const deadline=Date.now()+5000;
+    while(Date.now()<deadline){
+      const files=(await fs.readdir(workspace)).filter(name=>/^shutdown-[0-9a-f-]+\.json$/.test(name));
+      records=await Promise.all(files.map(async name=>({file:name,...JSON.parse(await fs.readFile(path.join(workspace,name),'utf8'))})));
+      if(records.length>0&&records.every(record=>record.closed===true&&record.state==='finished'))break;
+      await new Promise(resolve=>setTimeout(resolve,100));
+    }
     report.checks.cleanup={records:records.length,confirmed:records.length>0&&records.every(record=>record.closed===true&&record.state==='finished')};
     if(!report.checks.cleanup.confirmed)cleanupError='MCP退出未留下全部确认的清理终态';
   }
