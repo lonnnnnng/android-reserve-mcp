@@ -1,6 +1,6 @@
 # 实施进展
 
-截至2026-11-14，GitHub/npm `0.5.3`均已发布。动态关联、Mono方法观测和WebView initiator增量已纳入本版本；确切证据与仍未完成项以[本轮进展](CURRENT-INCREMENT.md)为准。下文保留历史发行快照，不能替代最新增量状态。
+截至2026-11-15，GitHub Release为`v0.5.4`，npm `0.5.4`按本次交付命令发布。动态关联、Mono方法观测、RN新架构 fixture、KMP publication、Godot双脚本和 Compose 扩展增量已通过对应证据；确切证据与仍未完成项以[本轮进展](CURRENT-INCREMENT.md)为准。下文保留历史发行快照，不能替代最新增量状态。
 
 ## 本批已落地
 
@@ -43,14 +43,14 @@ Java/APK/资源/重建签名、mapping、JS AST/source map、独占Native target
 
 | 范围 | 剩余工作 | 本轮可复用内容 |
 | --- | --- | --- |
-| View/Compose/KMP | 完整布局/状态/事件/导航语义、XML onClick的DEX落点、KMP klib及其他target/commonMain专项 | JetNews导航、真实Compose编译候选、DEX/metadata/资源/运行观测 |
-| RN/Hermes | HBC99已有显式实验反汇编；仍需正式兼容与更多版本覆盖、JSI/Fabric/TurboModules与异步跨层关系 | HBC84、RNTester HBC99与source map样本、JS/Native/Java通用层 |
+| View/Compose/KMP | 自有 Compose 导航/多状态/coroutine 已通过 MCP 多链 matcher；XML onClick 的 DEX 落点、KMP 更复杂业务结构/混淆回链仍待补 | JetNews导航、真实Compose编译候选、DEX/metadata/资源/运行观测、自有KMP业务App sharedNormalize回链、publication/klib fixture、Compose扩展MCP动态证据 |
+| RN/Hermes | HBC99已有显式实验反汇编；第三方开放 inspector 探测已加入，但生产 APK 静默注入、异步跨层关系和完整 Fabric 事件图仍不支持 | HBC84、RNTester HBC99与source map样本、POCO Cxx TurboModule/JSI/Fabric fixture、第三方探测器、JS/Native/Java通用层 |
 | Flutter | 完整Dart↔Android数据流与动态因果、更多Dart/ABI、EventChannel运行态和debug VM service专项 | ARM64 AOT与同APK静态协议候选；Driver只证明样本App交互，非MCP动态关联 |
 | Lynx/NativeScript | 专用codec/snapshot格式、版本路由、完整桥接 | 容器/JS/DEX/Native |
 | Web混合/PWA/TWA | 框架插件注册与完整路由、公网网络稳定性、SW/cache、系统浏览器独立上下文 | 已开放WebView/CDP、静态注解、已知Java桥接重载；官方样本单次公网200/正文通过，复验有pending超时 |
 | JNI/loader | 全部JNI表/ABI/CheckJNI、完整当前绑定快照、未知loader、异步传播 | 标准入口未来事件、RVA、BaseDex唯一selector |
-| MAUI | 更多真实MAUI APK、多runtime索引/布局、AOT地址/元数据关联 | 真实MAUI10 APK→122程序集→88引用ILSpy，同包真机按钮返回46 |
-| Godot | 更多Godot版本/C#资源图 | 已验收Godot4.3 GDScript；不在本次暂缓范围 |
+| MAUI | 更多真实MAUI APK、多runtime索引/布局、long/float/array/object ABI、AOT地址/元数据关联 | 真实MAUI10 APK→122程序集→88引用ILSpy，同包真机按钮返回46；自有NoInlining Int32/string/bool动态样本 |
+| Godot | 更多Godot版本/C#资源图 | 已验收Godot4.3双GDScript/双场景fixture；不在本次暂缓范围 |
 | 工程完整性 | 更全面格式/版本矩阵、深度doctor、更多Linux真实引擎验收 | 当前路径级doctor、固定依赖和自有样本 |
 
 实际使用、依赖与预算见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)、[ENVIRONMENT.md](ENVIRONMENT.md)。原始全路线评估保留在ROADMAP-GAPS.md；未完成项不通过改名或增加工具定义算完成。
@@ -59,4 +59,4 @@ Java/APK/资源/重建签名、mapping、JS AST/source map、独占Native target
 
 Unity、Unreal、HarmonyOS NEXT按用户决定短期不再推进，移出当前迭代及发版门槛。历史缺口、已有通用能力与IL2CPP/Ark适配保留，不标为已完成；恢复需用户明确安排，条件见[本轮进展](CURRENT-INCREMENT.md)。Godot与其他Android方向不受此调整影响。
 
-本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`v0.5.2`通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。GitHub Actions的Ubuntu/macOS任务均成功。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。动态关联增量已进入 GitHub/npm `0.5.3`。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。
+本地`v0.5.1` tag快照通过39项自动测试、语法检查、51文件包清单和tarball安装smoke；`v0.5.2`通过39项自动测试、语法检查、52文件包清单、release smoke及静态/Kotlin/分包/store smoke。GitHub Actions的Ubuntu/macOS任务均成功。真机重跑被Gadget能力条件阻塞，保留此前成功报告和本次失败记录。动态关联增量已进入 GitHub Release `v0.5.4`；npm 发布由用户执行。首发门槛和完整后续待办见[FIRST-RELEASE-TODO.md](FIRST-RELEASE-TODO.md)。

@@ -104,7 +104,7 @@ Network 只捕获启用后的事件；`initiator` 栈按同一 CDP session、进
 
 ### 4. MAUI / Mono 窄 ABI 观测
 
-`trace-mono` 是实验性适配器，只接受 ARM64、已加载 Mono、静态非泛型 `int32` 方法，拒绝 byref、CoreCLR、NativeAOT、复杂结构体和对象参数：
+`trace-mono` 是实验性适配器，只接受 ARM64、已加载 Mono、静态或显式实例的非泛型窄 ABI 方法，支持 `int32`、`bool`、`long`、`float`、`string` 参数/返回，拒绝 byref、数组、对象、CoreCLR、NativeAOT 和复杂结构体：
 
 ```json
 {
@@ -141,8 +141,8 @@ Native 独占 target 要按 `open → functions/function/references/callers/call
 
 - Flutter channel 当前主要是 ARM64 AOT 与 Android 注册/handler 的静态候选；当前 Android 16/Frida 组合的 Reply 动态注入仍有 JNI transition 崩溃。
 - Compose 当前有 Kotlin metadata、Composer、状态读写和调用点候选；状态入口动态注入同样保留兼容阻塞。
-- RN 已验证 Java Promise 边界；Hermes JS 栈、`.then()`、JSI/Fabric 完整因果仍未覆盖。
-- MAUI Mono 只验证窄 ABI；原 Release 方法内联、CoreCLR、NativeAOT 和复杂托管签名不能据此推断。
+- RN 已验证 Java Promise 边界，并在自有新架构 fixture 上验证 Cxx TurboModule/JSI 多类型转换和 Android Fabric/codegen 视图更新；通用探测器可对已开放 inspector 的第三方 APK采集身份；Hermes `.then()`、生产 APK 静默注入和完整Fabric事件因果仍未覆盖。
+- MAUI Mono 已验证静态/实例 `int32`、`bool`、`long`、`float` 与 `string` 窄 ABI；原 Release 方法内联、数组/对象、CoreCLR、NativeAOT 和复杂托管签名不能据此推断。
 - Unity、Unreal、HarmonyOS NEXT 当前暂缓。
 
 详细边界和动态证据见 [动态关联指南](DYNAMIC-CORRELATION.md)、[能力矩阵](CAPABILITIES.md) 和 [验证记录](VALIDATION.md)。

@@ -8,6 +8,17 @@ import { run, tool, checked } from './process.js';
 const collector = fileURLToPath(new URL('../../helpers/package-set.py', import.meta.url));
 const manifestHelper = fileURLToPath(new URL('../../helpers/static.py', import.meta.url));
 
+export function parseSignerCertificates(output) {
+  const certificates = [];
+  for (const line of String(output || '').split(/\r?\n/)) {
+    // long: build-tools新旧版本分别输出“Signer #N ...”和“V3.0 Signer: ...”，两者都表示同一签名摘要。
+    if (!/(?:Signer #\d+\s+certificate|V\d+(?:\.\d+)? Signer:\s+certificate)/.test(line)) continue;
+    const match = line.match(/certificate SHA-256 digest:\s*([a-fA-F0-9]{64})\s*$/);
+    if (match) certificates.push(match[1].toLowerCase());
+  }
+  return [...new Set(certificates)];
+}
+
 async function bundletool(signal, args) {
   const jar = process.env.ANDROID_RESERVE_BUNDLETOOL || path.join(os.homedir(), '.local/share/android-reserve-mcp/engines/bundletool-all-1.18.3.jar');
   if (!path.isAbsolute(jar)) throw new Error('ANDROID_RESERVE_BUNDLETOOL必须为绝对路径');
@@ -78,7 +89,7 @@ export function validatePackageSet(records) {
   return { valid: errors.length === 0, errors: [...new Set(errors)], warnings, package: first?.manifest?.package, versions: Object.fromEntries(versions), deviceCompleteness: 'not-evaluated', limitation: '校验所选集合的一致性和显式依赖，不证明所有设备/按需模块均齐全' };
 }
 
-async function inspectSnapshots(args, input, dir, signal) {
+export async function inspectSnapshots(args, input, dir, signal) {
   const result = checked(await run(await tool('python3'), [collector, input, path.join(dir, 'inputs'), JSON.stringify(args.members || [])], { signal, timeoutMs: 120000, maxBytes: 512000 }), '收集所选分包');
   const collected = JSON.parse(result.stdout);
   if (result.truncated) throw new Error('分包收集报告超预算');
@@ -94,7 +105,7 @@ async function inspectSnapshots(args, input, dir, signal) {
       const verify = await run(signer, ['verify', '--verbose', '--print-certs', record.path], { signal });
       if (verify.canceled || verify.timedOut) checked(verify, '签名验证');
       await fs.writeFile(path.join(dir, `signature-${i}.log`), verify.stdout + verify.stderr);
-      record.signature = { verified: verify.code === 0 && !verify.truncated, certificates: [...verify.stdout.matchAll(/^Signer #\d+ certificate SHA-256 digest:\s*([a-fA-F0-9]{64})\s*$/gm)].map(m => m[1].toLowerCase()) };
+      record.signature = { verified: verify.code === 0 && !verify.truncated, certificates: parseSignerCertificates(verify.stdout) };
     } catch (error) { if (signal.aborted) throw error; record.error = String(error.message).slice(0, 1000); }
   }
   return { ...collected, validation: validatePackageSet(collected.records) };

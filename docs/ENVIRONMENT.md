@@ -1,6 +1,6 @@
 # 环境与完整能力依赖
 
-已发布版本0.5.3。核验日期：2026-11-14。本文同时列出“启动服务”“使用某项能力”和“动态分析”的不同条件。
+已发布版本0.5.4。核验日期：2026-11-15。本文同时列出“启动服务”“使用某项能力”和“动态分析”的不同条件。
 
 ## 1. 宿主环境
 
@@ -220,6 +220,6 @@ Skill 只读开放 `apk-reverse`、`mobile-reverse`、`ida-reverse`、`protocol-
 
 固定引擎路径、环境变量和下载校验见[ENGINE-SETUP.md](ENGINE-SETUP.md)新增章节，详细操作与预算见[ADVANCED-ANALYSIS.md](ADVANCED-ANALYSIS.md)。开发smoke还需样本构建工具，不能混成普通分析的启动条件。未安装引擎不阻止其他独立功能启动。
 
-## 0.5.3 动态关联依赖
+## 0.5.4 动态关联依赖
 
-trace-java-group复用REA6.9.0/Frida17.23.2及现有bridge7.0.13编译条件；不需要额外框架SDK。当前POCO Android16上普通Java与RN Promise通过，Flutter reply与Compose状态入口触发JNI transition错误，不能声称这些框架动态链兼容。trace-mono要求目标加载libmonosgen-2.0.so并导出公开Mono解析/JIT信息API，目前只验ARM64静态非泛型Int32，无byref；CoreCLR/NativeAOT不适用。分析现成MAUI APK无需安装.NET SDK；自有动态样本构建才需私有.NET10/maui-android、JDK21和Android SDK/NDK。WebView initiator仅需原CDP条件，无浏览器或Frida依赖。步骤与边界见[DYNAMIC-CORRELATION.md](DYNAMIC-CORRELATION.md)。
+trace-java-group复用REA6.9.0/Frida17.23.2及现有bridge7.0.13编译条件；不需要额外框架SDK。POCO Android16上普通Java、RN Promise、自有 Flutter typed bridge/EventChannel 和自有 Compose 扩展 matcher 均有对应证据，但不能外推任意框架版本或设备。trace-mono要求目标加载libmonosgen-2.0.so并导出公开Mono解析/JIT信息API，目前验收ARM64非泛型`int32/bool/long/float/string`窄ABI（静态或显式instance），无byref、对象或数组；CoreCLR/NativeAOT不适用。分析现成MAUI APK无需安装.NET SDK；自有动态样本构建才需私有.NET10/maui-android、JDK21和Android SDK/NDK。WebView initiator仅需原CDP条件，无浏览器或Frida依赖。步骤与边界见[DYNAMIC-CORRELATION.md](DYNAMIC-CORRELATION.md)。

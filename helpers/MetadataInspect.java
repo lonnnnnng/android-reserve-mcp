@@ -31,6 +31,9 @@ public class MetadataInspect {
     row.put("returnClassifier", String.valueOf(f.getReturnType().getClassifier())); return row;
   }
   public static void main(String[] args) throws Exception {
+    String selection = args.length > 3 ? args[3].startsWith("@") ? Files.readString(Path.of(args[3].substring(1))) : args[3] : "[]";
+    Set<String> selectedClasses = new HashSet<>(Arrays.asList(new Gson().fromJson(selection,String[].class)));
+    boolean selectedOnly = args.length > 4 && args[4].equals("selected-only");
     List<Object> classes = new ArrayList<>(); boolean partial = false; int examined = 0, visited = 0, metadataBytes = 0, composeInstructions = 0;
     JadxArgs options = new JadxArgs(); options.setInputFile(new File(args[0])); options.setSkipResources(true); options.setThreadsCount(2);
     options.setOutDir(new File(args[1]).getParentFile());
@@ -39,11 +42,11 @@ public class MetadataInspect {
       for (JavaClass api : jadx.getClassesWithInners()) {
         if (++visited > 100000) { partial = true; break; }
         ClassNode cls = api.getClassNode();
-        if (args.length > 2 && !cls.getRawName().startsWith(args[2])) continue;
+        if (selectedOnly ? !selectedClasses.contains(cls.getRawName()) : args.length > 2 && !cls.getRawName().startsWith(args[2]) && !selectedClasses.contains(cls.getRawName())) continue;
         // long: query限定业务包时，无关依赖只占轻量遍历预算，不能耗尽目标类的metadata解析额度。
         if (++examined > 5000) { partial = true; break; }
         if (cls.getClsData() == null) continue;
-        Map<String,Object> annotations = new LinkedHashMap<>();
+        Map<String,Object> annotations = new LinkedHashMap<>();boolean classPartial=false;
         for (var attribute : cls.getClsData().getAttributes()) if (attribute instanceof AnnotationsAttr attr) for (IAnnotation annotation : attr.getList()) {
           String name = annotation.getAnnotationClass();
           if (!name.contains("kotlin/Metadata") && !name.contains("kotlin.Metadata") && !name.contains("DebugMetadata")) continue;
@@ -59,7 +62,7 @@ public class MetadataInspect {
             Map<String,Integer> signals = new LinkedHashMap<>(); List<Object> callsites = new ArrayList<>();
             try {
               int instructionCount=method.getInsnsCount();
-              if(instructionCount<0||composeInstructions+instructionCount>50000){partial=true;signals.put("instruction-budget-exceeded",1);}
+              if(instructionCount<0||composeInstructions+instructionCount>50000){partial=true;classPartial=true;signals.put("instruction-budget-exceeded",1);}
               else {
                 composeInstructions+=instructionCount;method.load();
                 for(var insn:method.getInstructions())if(insn instanceof BaseInvokeNode invoke){
@@ -77,7 +80,7 @@ public class MetadataInspect {
                   }
                 }
               }
-            } catch(Exception error) { partial=true; signals.put("instruction-read-failed",1); }
+            } catch(Exception error) { partial=true;classPartial=true; signals.put("instruction-read-failed",1); }
             composeSignals.add(Map.of("jvmSignature",signature,"signals",signals,"callsites",callsites,"evidence","compiled-invoke-reference-candidate"));
           }
           if (method.getName().equals("invokeSuspend")) stateMachine = true;
@@ -92,7 +95,7 @@ public class MetadataInspect {
         for (var entry : annotations.entrySet()) if (entry.getKey().contains("Metadata") && !entry.getKey().contains("DebugMetadata")) {
           var raw = (Map<String,Object>) entry.getValue(); int bytes = new Gson().toJson(raw).length()*3;
           metadataBytes += bytes;
-          if (bytes > 1024*1024 || metadataBytes > 8*1024*1024) { partial = true; row.put("metadataStatus","budget-exceeded"); row.remove("annotations"); break; }
+          if (bytes > 1024*1024 || metadataBytes > 8*1024*1024) { partial = true;classPartial=true; row.put("metadataStatus","budget-exceeded"); row.remove("annotations"); break; }
           try {
             var annotation = JvmMetadataUtil.Metadata(integer(raw,"k",1),ints(raw.get("mv")),strings(raw.get("d1")),strings(raw.get("d2")),string(raw,"xs"),string(raw,"pn"),integer(raw,"xi",0));
             KotlinClassMetadata parsed = KotlinClassMetadata.readLenient(annotation);
@@ -104,13 +107,19 @@ public class MetadataInspect {
             row.put("metadataStatus","decoded-lenient"); row.put("metadataKind",parsed.getClass().getSimpleName());
             row.put("functions",functions.stream().limit(1000).map(f -> function(f,methods)).toList());
             row.put("properties",properties.stream().limit(1000).map(p -> Map.of("name",p.getName(),"mutable",Attributes.isVar(p))).toList());
-            if (functions.size()>1000 || properties.size()>1000) partial = true;
-          } catch (Exception error) { row.put("metadataStatus","unsupported-or-malformed"); row.put("metadataError",String.valueOf(error.getMessage())); partial=true; }
+            // long: 类条目保留原始数量和截断标记，读取单个类时也能判断声明是否完整，不能只依赖报告顶层partial。
+            row.put("functionCount",functions.size());row.put("propertyCount",properties.size());row.put("functionsTruncated",functions.size()>1000);row.put("propertiesTruncated",properties.size()>1000);
+            if (functions.size()>1000 || properties.size()>1000) {partial = true;classPartial=true;}
+          } catch (Exception error) { row.put("metadataStatus","unsupported-or-malformed"); row.put("metadataError",String.valueOf(error.getMessage())); partial=true;classPartial=true; }
         }
+        row.put("partial",classPartial);
         classes.add(row);
       }
     }
-    Map<String,Object> report = new LinkedHashMap<>(); report.put("classes",classes); report.put("examined",examined); report.put("visited",visited); report.put("composeInstructions",composeInstructions); report.put("partial",partial);
+    List<Object> retained = new ArrayList<>(); long outputBytes = 0;
+    // long: 原始注解预算不能限制方法签名和编译候选的总量；最终报告还须逐类限制UTF-8字节，超限明确保留partial。
+    for(Object row:classes){long bytes=new Gson().toJson(row).getBytes(java.nio.charset.StandardCharsets.UTF_8).length+1;if(outputBytes+bytes>16*1024*1024-16384){partial=true;break;}outputBytes+=bytes;retained.add(row);}
+    Map<String,Object> report = new LinkedHashMap<>(); report.put("classes",retained); report.put("examined",examined); report.put("visited",visited); report.put("composeInstructions",composeInstructions); report.put("partial",partial);report.put("omittedClasses",classes.size()-retained.size());
     report.put("limitation","metadata声明和编译结构候选，不恢复完整Compose UI/异步调用链/KMP commonMain");
     Files.writeString(Path.of(args[1]),new Gson().toJson(report));
   }

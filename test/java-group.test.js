@@ -6,8 +6,9 @@ import { validateJavaGroup } from '../src/core/java-agent.js';
 function fixture() {
   const events = [], timers = new Set(), methods = new Map(); let tid = 1, released = 0;
   const type = (name, fn, returns = 'void') => {
-    const method = { returnType: { className: returns }, implementation: null, apply: fn };
-    methods.set(name, method); return { overload: () => method };
+    const argumentsByName = { 'Reply.done': ['int'], 'Owned.inner': [], 'Owned.start': ['Reply'] };
+    const method = { argumentTypes: argumentsByName[name].map(className => ({ className })), returnType: { className: returns }, implementation: null, apply: fn };
+    methods.set(name, method); return { overloads: [method], overload: () => method };
   };
   const callback = type('Reply.done', (_self, args) => args[0], 'int');
   const inner = type('Owned.inner', () => 7, 'int');
@@ -95,4 +96,50 @@ test('已完成对象仍保留有界身份历史，再次请求和迟到重复�
   f.methods.get('Owned.start').implementation.call({$h:1},object);f.methods.get('Reply.done').implementation.call(object,46);
   assert.equal(f.events.filter(e=>e.correlation?.state==='reply-returned').length,1);
   assert.ok(f.events.some(e=>e.correlation?.state==='ambiguous-object-reuse'));observer.stop();assert.equal(f.released(),1);
+});
+
+test('无参数入口按明确receiver关联异步回复，其他方法只记录同对象身份', () => {
+  const f=fixture(),owner={$h:77};
+  f.config.javaHooks[0]={...f.config.javaHooks[0],argumentTypes:[],captureReceiver:true,correlation:{group:'owner',role:'request',receiver:true}};
+  f.methods.get('Owned.start').argumentTypes=[];f.methods.get('Owned.start').apply=()=>undefined;
+  f.config.javaHooks[1].captureReceiver=true;f.config.javaHooks[2].correlation={group:'owner',role:'reply'};
+  validateJavaGroup(f.config);const observer=startJavaGroupObserver(f.Java,f.config,f.env);
+  f.methods.get('Owned.start').implementation.call(owner);
+  f.methods.get('Owned.inner').implementation.call(owner);f.setTid(2);f.methods.get('Reply.done').implementation.call(owner,46);
+  const request=f.events.find(row=>row.event==='java-enter'&&row.hookId==='start'),inner=f.events.find(row=>row.event==='java-enter'&&row.hookId==='inner'),reply=f.events.find(row=>row.event==='java-exit'&&row.correlation?.state==='reply-returned');
+  assert.equal(inner.receiverIdentity.objectId,request.receiverIdentity.objectId);assert.equal(reply.correlation.requestId,request.invocationId);
+  assert.throws(()=>validateJavaGroup({...f.config,javaHooks:[{...f.config.javaHooks[0],correlation:{group:'x',role:'request',receiver:true,argumentIndex:0}}]}),/同时|越界/);
+  observer.stop();assert.equal(f.released(),1);
+});
+
+test('Flutter MethodCall采集兼容Frida字段wrapper和值对象，保留正向参数证据', () => {
+  const fields = { method: { value: 'transformInt' }, arguments: { value: 17 } };
+  const field = name => { try { const candidate = fields[name]; return candidate?.value ?? candidate; } catch { return undefined; } };
+  assert.equal(field('method'), 'transformInt'); assert.equal(field('arguments'), 17);
+});
+
+test('Flutter MethodCall采集允许R8 mapping后的类名与字段名', () => {
+  const { config } = fixture();
+  const mapped = {
+    ...config,
+    javaHooks: [{
+      ...config.javaHooks[0],
+      argumentTypes: ['zb', 'cc'],
+      valueCaptures: [{ kind: 'flutter-method-call', argumentIndex: 0, className: 'zb', methodField: 'a', argumentsField: 'b' }],
+    }],
+  };
+  assert.doesNotThrow(() => validateJavaGroup(mapped));
+});
+
+test('EventChannel多次EventSink回复保留同一对象关联', () => {
+  const f = fixture();
+  f.config.javaHooks[0] = { ...f.config.javaHooks[0], correlation: { group: 'event-sink', role: 'request', argumentIndex: 0, multiReply: true } };
+  f.config.javaHooks[2] = { ...f.config.javaHooks[2], correlation: { group: 'event-sink', role: 'reply' } };
+  const observer = startJavaGroupObserver(f.Java, f.config, f.env);
+  const sink = { $h: 10 };
+  f.methods.get('Owned.start').implementation.call({ $h: 1 }, sink);
+  f.methods.get('Reply.done').implementation.call(sink, 1);
+  f.methods.get('Reply.done').implementation.call(sink, 2);
+  assert.equal(f.events.filter(e => e.correlation?.state === 'reply-returned').length, 2);
+  observer.stop();
 });

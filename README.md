@@ -2,27 +2,25 @@
 
 面向 Android 逆向和产物分析的 MCP 服务。它通过本地 stdio 接入 Agent，覆盖 APK/DEX、Kotlin/Compose、Java/JNI、Native、WebView、Hermes/Flutter、.NET assembly store 和有界运行时观测。
 
-当前发布版：`0.5.3`。
-
-当前开发版：`0.5.4`，尚未发布。新增注入前兼容性拒绝、任务实例所有权、请求证据终态合并、退出期限及深度依赖检查，见[稳定性进展](docs/STABILITY-20261115.md)。
+当前发布版：`0.5.4`。本版本新增注入前兼容性拒绝、任务实例所有权、请求证据终态合并、退出期限及深度依赖检查，并补齐 Compose 扩展 MCP 多链、Flutter EventChannel、RN 自有 JSI/Fabric、KMP 业务回链和 MAUI long/float 观测，见[稳定性进展](docs/STABILITY-20261115.md)。
 
 - GitHub：[lonnnnnng/android-reserve-mcp](https://github.com/lonnnnnng/android-reserve-mcp)
-- Release：[v0.5.3](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.3)
-- npm registry 当前 `latest`：`0.5.3`。
+- Release：[v0.5.4](https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.4)
+- npm registry 发布命令见本次交付说明；发布后 `latest` 为 `0.5.4`。
 
 ## 快速安装
 
 要求 Node.js `>=26.12.1`。全局安装：
 
 ```zsh
-npm install -g android-reserve-mcp@0.5.3
+npm install -g android-reserve-mcp@0.5.4
 node "$(npm root -g)/android-reserve-mcp/src/cli.js" --version
 ```
 
-需要本版本 `0.5.3` 的动态关联能力时，从 GitHub tag 或源码目录运行：
+需要本版本 `0.5.4` 的动态关联能力时，从 GitHub tag 或源码目录运行：
 
 ```zsh
-git clone --branch v0.5.3 https://github.com/lonnnnnng/android-reserve-mcp.git
+git clone --branch v0.5.4 https://github.com/lonnnnnng/android-reserve-mcp.git
 cd android-reserve-mcp
 npm ci --ignore-scripts
 node src/cli.js --version
@@ -80,7 +78,7 @@ node src/cli.js --version
 - **语言与框架**：Kotlin metadata、suspend/inline、Compose 编译候选、JavascriptInterface、Hermes、Flutter channel 静态协议、Godot、ILSpy 和 .NET assembly store。
 - **Native 与 JNI**：ELF、导出函数、调用关系、JNI 静态/动态注册、Native 导出名或 RVA 观测。
 - **WebView 与 JavaScript**：DOM、脚本源码、Network、正文、CDP initiator 栈、scriptId 到源码 SHA/AST 关联。
-- **运行时观测**：Java 精确重载、Java 请求/回复对象关联、RN Promise 边界、Mono ARM64 静态 `int32` 窄 ABI。
+- **运行时观测**：Java 精确重载、Java 请求/回复对象关联、RN Promise/自有 JSI-Fabric 因果、Flutter EventChannel sink、Compose 扩展状态链、Mono ARM64 窄 ABI。
 - **证据管理**：跨任务内容哈希、签名、调用 ID、来源文件和 JSON pointer。
 
 完整的 20 个顶层工具、action、参数示例、常用工作流和能力边界见 [工具与用法参考](docs/TOOL-REFERENCE.md)。
@@ -90,9 +88,10 @@ node src/cli.js --version
 - `allowedRoots` 是输入路径边界，不是操作系统沙箱。
 - `partial` 结果必须按部分结果处理，不能当成完整恢复。
 - 动态分析需要明确设备序列号、包名和 PID；服务不会自动选择手机。
-- Flutter Reply 和 Compose 状态入口在当前 Android 16/Frida 组合仍存在 JNI transition 兼容阻塞。
-- RN 已验证 Java Promise 边界，但 Hermes `.then()`、JSI、Fabric 的完整因果链仍未覆盖。
-- Mono 只支持已加载 Mono、ARM64、静态非泛型 `int32` 方法；CoreCLR、NativeAOT 和复杂托管 ABI 不在当前范围。
+- Flutter typed bridge 与自有 R8 MethodChannel/EventChannel fixture 已在 POCO/ART36/Frida17.23.2 通过；任意 Flutter ABI、Dart VM service 和跨设备/ROM仍未覆盖。
+- RN 自有 debug/new-architecture fixture 的 Hermes/JSI/Fabric 因果已验证；第三方 APK 仍只读开放 inspector，未开放时 `unsupported`，不做静默注入。
+- Compose 扩展链依赖显式 hooks 和自有业务 marker；不泛化任意 Compose 应用。
+- Mono 已补 long/float；仍不支持 CoreCLR、NativeAOT、数组/对象和复杂托管 ABI。
 - Unity、Unreal、HarmonyOS NEXT 暂缓。
 
 完整的“已完成 / 部分完成 / 待开发 / 暂缓 / 下一步”路线图见 [ROADMAP.md](docs/ROADMAP.md)。详细证据和限制见 [动态关联指南](docs/DYNAMIC-CORRELATION.md)、[能力矩阵](docs/CAPABILITIES.md)、[验证记录](docs/VALIDATION.md) 和 [环境依赖](docs/ENVIRONMENT.md)。

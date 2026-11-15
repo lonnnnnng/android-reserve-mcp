@@ -49,22 +49,51 @@ export function mergeEvidenceNode(prior, next) {
 }
 
 export function indexEvidence(jobId, sources) {
-  const nodes = new Map(), edges = new Map(); let partial = false, scanned = 0;
+  const nodes = new Map(), edges = new Map(); let partial = false, scanned = 0, graphBytes = 0;
   const take = (values, maximum) => {
     if (!Array.isArray(values)) { if (values != null) partial = true; return []; }
     // long: 专用索引预算比通用遍历更小；每次裁剪都须传播partial，不能依赖后续walk替它标记遗漏。
     if (values.length > maximum) partial = true;
     return values.slice(0, maximum);
   };
-  const add = (kind, identity, data) => { const id=kind+':'+key(identity), prior=nodes.get(id); if(!prior&&nodes.size>=20000){partial=true;return null;} const merged=mergeEvidenceNode(prior,{id,kind,...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))});partial ||= merged.partial;nodes.set(id,merged.node);return id; };
-  const edge = (from,to,relation,source,strength) => {if(!from||!to)return;if(edges.size>=40000){partial=true;return;}const e={from,to,relation,source,strength};edges.set(key(e),e);};
+  const add = (kind, identity, data) => {
+    const id=kind+':'+key(identity), prior=nodes.get(id); if(!prior&&nodes.size>=20000){partial=true;return null;}
+    const merged=mergeEvidenceNode(prior,{id,kind,...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))});partial ||= merged.partial;
+    const bytes=Buffer.byteLength(JSON.stringify(merged.node))-(prior?Buffer.byteLength(JSON.stringify(prior)):0);
+    // long: 完整DEX身份和累计请求快照会扩大单节点；证据图同时限制UTF-8总量，省略后必须降为partial。
+    if(graphBytes+bytes>16*1024*1024-16384){partial=true;return prior?id:null;}
+    graphBytes+=bytes;nodes.set(id,merged.node);return id;
+  };
+  const edge = (from,to,relation,source,strength) => {
+    if(!from||!to)return;const e={from,to,relation,source,strength},id=key(e);if(edges.has(id))return;
+    const bytes=Buffer.byteLength(JSON.stringify(e))+1;
+    if(edges.size>=40000||graphBytes+bytes>16*1024*1024-16384){partial=true;return;}graphBytes+=bytes;edges.set(id,e);
+  };
   const run=add('run',jobId,{jobId});
+  function dexDefinition(row, citation) {
+    if(!sha(row?.definitionId)||!sha(row.identity?.dexSha256)||!sha(row.identity?.inputSha256))return null;
+    const origin=row.identity, dex=add('artifact',origin.dexSha256.toLowerCase(),{sha256:origin.dexSha256.toLowerCase()});
+    const definition=add(row.methodId?'dex-method-definition':'dex-class-definition',row.definitionId,{definitionId:row.definitionId,className:row.className,methodName:row.methodName,methodId:row.methodId,descriptor:row.descriptor,identity:origin,runtimeSelector:row.runtimeSelector});
+    edge(run,dex,'indexes-raw-dex',citation,'dex-content-hash');
+    if(origin.dexEntry!=='<standalone-dex>'){
+      const input=add('artifact',origin.inputSha256.toLowerCase(),{sha256:origin.inputSha256.toLowerCase()});
+      const member=add('dex-member',[origin.inputSha256,origin.source,origin.dexEntry,origin.zipIndex,origin.dexSha256],{source:origin.source,dexEntry:origin.dexEntry,zipIndex:origin.zipIndex,dexSha256:origin.dexSha256});
+      edge(input,member,'contains-root-dex-member',citation,'reported-zip-entry');edge(member,dex,'has-content',citation,'dex-content-hash');
+    }
+    edge(dex,definition,row.methodId?'defines-raw-method':'defines-raw-class',citation,'raw-dex-index');
+    if(row.methodId&&sha(row.classDefinitionId)){
+      const cls=add('dex-class-definition',row.classDefinitionId,{definitionId:row.classDefinitionId,className:row.className});
+      edge(cls,definition,'declares-raw-method',citation,'raw-dex-class-method-index');
+    }
+    return definition;
+  }
   function walk(value, pointer, source, scope, parentArtifact, depth=0) {
     if(!value||typeof value!=='object')return;
     if(++scanned>50000||depth>24){partial=true;return;}
     if(Array.isArray(value)){take(value,12000).forEach((v,i)=>walk(v,pointer+'/'+i,source,scope,parentArtifact,depth+1));return;}
     if(value.partial === true || value.truncated === true) partial = true;
     scope={...scope}; for(const [field,target] of [['session_id','session'],['device_id','device'],['script_id','script'],['traceId','trace']])if(typeof value[field]==='string')scope[target]=value[field];
+    if(sha(value.mapping?.input?.sha256))scope.mappingHash=value.mapping.input.sha256.toLowerCase();
     if(Number.isSafeInteger(value.pid))scope.pid=value.pid;
     const citation={jobId,file:source,jsonPointer:pointer};
     let artifact=parentArtifact;
@@ -84,6 +113,10 @@ export function indexEvidence(jobId, sources) {
       const runtime=[scope.device,scope.session,scope.pid,scope.script,scope.trace];
       const data={event:value.event,pid:value.pid,sequence:value.sequence,methodKey:value.methodKey,className:value.className,address:value.address,rva:value.rva,module:value.module,outcome:value.outcome};
       const event=add('runtime-event',[runtime,value.sequence,key(value)],data);edge(run,event,'observed-result',citation,'reported-runtime-event');
+      if(value.receiverIdentity?.association==='jni-object-identity-history'&&typeof value.receiverIdentity.objectId==='string'){
+        const object=add('java-runtime-object',[runtime,value.receiverIdentity.objectId],{scope,objectId:value.receiverIdentity.objectId});
+        edge(event,object,'observes-receiver-identity',citation,'same-agent-jni-object-identity-history');
+      }
       if(value.runtime==='mono'&&value.association==='mono-jit-info-method-identity'&&typeof value.imageGuid==='string'&&typeof value.metadataToken==='string'){
         // long: MVID和MethodDef只在本运行会话的Mono回核范围关联，不自动冒充与磁盘DLL哈希同构建。
         const method=add('managed-method',[runtime,value.imageGuid,value.metadataToken],{runtime:'mono',imageGuid:value.imageGuid,metadataToken:value.metadataToken,assemblyName:value.assemblyName,fullName:value.fullName,address:value.address,module:value.module,rva:value.rva});
@@ -105,8 +138,16 @@ export function indexEvidence(jobId, sources) {
       if(typeof value.registrationId==='string'){const registration=add('jni-registration',[runtime,value.registrationId],{scope,registrationId:value.registrationId});edge(event,registration,'reported-registration-phase',citation,'reported-same-script-call-id');}
     }
     if(value.className&&Array.isArray(value.functions))for(const f of take(value.functions,1000))if(f.jvmSignature){
-      const method=add('java-method',[artifact||jobId,value.className,f.jvmSignature],{className:value.className,signature:f.jvmSignature,suspend:f.suspend,inline:f.inline});
+      const method=add('java-method',[artifact||jobId,value.className,f.jvmSignature,...(value.identity?[value.identity.dexSha256,value.identity.classIndex]:[])],{className:value.className,signature:f.jvmSignature,suspend:f.suspend,inline:f.inline,rawMethodId:f.rawMethodId,definitionResolution:f.definitionResolution});
       edge(artifact||run,method,f.exactDexMatch?'metadata-signature-matches-dex':'metadata-declares',citation,f.exactDexMatch?'exact-signature-in-same-artifact':'metadata-declaration');
+      for(const candidate of take(f.definitionCandidates,16)){
+        const definition=dexDefinition({definitionId:candidate.definitionId,identity:candidate.identity,className:value.className,methodId:f.rawMethodId},citation);
+        edge(method,definition,f.exactDexMatch?'metadata-matches-raw-definition':'metadata-definition-candidate',citation,f.exactDexMatch?'raw-dex-complete-signature':'static-definition-candidate');
+      }
+      if(f.mapping?.status==='mapped'){
+        const name=add('mapped-method-name',[scope.mappingHash||jobId,f.rawMethodId,f.mapping.originalSignature],{...f.mapping,mappingHash:scope.mappingHash});
+        edge(method,name,'projects-original-method-name',citation,'caller-supplied-build-match-unverified');
+      }
     }
     if(value.className&&Array.isArray(value.composeSignals))for(const item of take(value.composeSignals,1000))if(typeof item.jvmSignature==='string'&&item.signals&&typeof item.signals==='object'){
       const method=add('compose-method',[artifact||jobId,value.className,item.jvmSignature],{className:value.className,signature:item.jvmSignature,evidence:'composer-parameter-in-compiled-dex'});
@@ -129,6 +170,31 @@ export function indexEvidence(jobId, sources) {
     for(const [field,child] of Object.entries(value))if(!['content','raw_result','annotations'].includes(field)&&!(value.kind==='source-map-position'&&field==='map'))walk(child,pointer+'/'+field.replaceAll('~','~0').replaceAll('/','~1'),source,scope,artifact,depth+1);
   }
   for(const source of sources){const hash=sha(source.artifactHash)?source.artifactHash.toLowerCase():null;const anchor=hash?add('artifact',hash,{sha256:hash}):null;walk(source.value,'',source.file,{},anchor);}
+  for(const source of sources){
+    // long: result.json中的classes/methods是计数摘要，完整数组只在DEX报告中；摘要不能被当作畸形数组而误标partial。
+    const value=source.value;if(value?.kind!=='raw-dex-query'||!Array.isArray(value.classes))continue;
+    const citation=pointer=>({jobId,file:source.file,jsonPointer:pointer}), definitions=new Map();
+    const scope=key([...new Set((value.dexes||[]).map(row=>row.inputSha256))].sort());
+    for(const field of ['classes','methods','targetDefinitions'])take(value[field],20000).forEach((row,index)=>{
+      const node=dexDefinition(row,citation('/'+field+'/'+index));if(node)definitions.set(row.definitionId,node);
+      if(node&&row.mapping?.status==='mapped'){
+        const hash=sha(value.mapping?.input?.sha256)?value.mapping.input.sha256.toLowerCase():jobId;
+        const mapped=add(row.methodId?'mapped-method-name':'mapped-class-name',[hash,row.definitionId,row.mapping],row.mapping);
+        edge(node,mapped,'projects-original-name',citation('/'+field+'/'+index+'/mapping'),'caller-supplied-build-match-unverified');
+      }
+    });
+    take(value.references,20000).forEach((row,index)=>{
+      const pointer='/references/'+index, from=dexDefinition(row.sourceMethod,citation(pointer+'/sourceMethod')), target=row.target;
+      if(!from||!target)return;
+      const kind=target.methodId?'dex-method-symbol':target.fieldName?'dex-field-symbol':'dex-class-symbol';
+      const symbol=add(kind,[scope,target.methodId||target.className,target.fieldName,target.fieldType],{...target,scope,dispatch:row.dispatch});
+      const site=add('dex-reference-site',[row.sourceMethod.definitionId,row.dexOffset,row.opcode,target],{dexOffset:row.dexOffset,offsetUnit:row.offsetUnit,opcode:row.opcode,dispatch:row.dispatch});
+      // long: 静态指令只指向符号；重复定义各自保留候选边，definitionId选择不改变实际运行时dispatch。
+      edge(from,site,'contains-static-reference',citation(pointer),'raw-dex-instruction-offset');edge(site,symbol,'references-declared-symbol',citation(pointer+'/target'),'symbolic-reference-not-runtime-dispatch');
+      for(const id of take(target.definitionCandidates,32))edge(symbol,definitions.get(id),'has-static-definition-candidate',citation(pointer+'/target/definitionCandidates'),'raw-dex-declaration-not-runtime-dispatch');
+      for(const id of take(target.ownerClassDefinitionCandidates,32))edge(symbol,definitions.get(id),'has-declaring-class-candidate',citation(pointer+'/target/ownerClassDefinitionCandidates'),'raw-dex-owner-class-declaration');
+    });
+  }
   for(const source of sources){
     const value=source.value,citation=(jsonPointer)=>({jobId,file:source.file,jsonPointer});
     if(typeof value?.sessionId==='string'&&typeof value?.processEpoch==='string'){
@@ -204,12 +270,12 @@ export function indexEvidence(jobId, sources) {
 export async function evidenceForJob(job, result) {
   const sources=[{file:'result.json',value:result}]; let bytes=0; const skipped=[];
   // long: 只读固定报告名，拒绝外部解析器生成的越界符号链接；目标文本不能指定新的宿主文件。
-  for(const name of ['script.json','inventory.json','kotlin.json','managed.json','packages.json','layout-events.json']){
+  for(const name of ['script.json','inventory.json','kotlin.json','kotlin-dex-index.json','dex.json','managed.json','packages.json','layout-events.json']){
     const file=await fs.realpath(path.join(job.dir,name)).catch(()=>null);if(!file)continue;if(!within(job.dir,file)){skipped.push(name+':outside-job');continue;}
-    const stat=await fs.stat(file);if(!stat.isFile()||stat.size>16*1024*1024||bytes+stat.size>32*1024*1024){skipped.push(name+':budget');continue;}
+    const stat=await fs.stat(file),maximum=name==='kotlin.json'?32*1024*1024:16*1024*1024;if(!stat.isFile()||stat.size>maximum||bytes+stat.size>64*1024*1024){skipped.push(name+':budget');continue;}
     bytes+=stat.size;try{sources.push({file:name,value:JSON.parse(await fs.readFile(file,'utf8')),artifactHash:result.input?.sha256||result.inputSha256});}catch{skipped.push(name+':invalid-json');}
   }
-  const graph=indexEvidence(job.id,sources);graph.partial ||= skipped.length>0;graph.skipped=skipped;await fs.writeFile(path.join(job.dir,'evidence.json'),JSON.stringify(graph,null,2));return {artifact:'evidence.json',nodes:graph.nodes.length,edges:graph.edges.length,partial:graph.partial};
+  const graph=indexEvidence(job.id,sources);graph.partial ||= skipped.length>0;graph.skipped=skipped;await fs.writeFile(path.join(job.dir,'evidence.json'),JSON.stringify(graph));return {artifact:'evidence.json',nodes:graph.nodes.length,edges:graph.edges.length,partial:graph.partial};
 }
 
 export async function evidence(context,args){

@@ -1,16 +1,23 @@
 # 验证记录
 
-日期：2026-11-14；宿主macOS arm64。`v0.5.2`已通过GitHub Release发布；以下分开记录`v0.5.1` tag快照、`v0.5.2`发行验证及更早的`v0.5.0`历史；环境版本见ENVIRONMENT.md。
+日期：2026-11-15；宿主macOS arm64。`v0.5.4`已通过 GitHub Release 发布，npm 发布由用户手动执行；以下保留历史版本验证，并以[本轮进展](CURRENT-INCREMENT.md)记录当前证据。
 
-当前`0.5.3`的动态关联、Flutter/Compose兼容边界和真实MAUI结果见[本轮进展](CURRENT-INCREMENT.md)。下文保留发行历史；旧版本中未通过的项不能据此推翻新证据，新证据也不扩大为全技术栈支持。
+## `v0.5.4` Release 验证
+
+- `npm test`：113 项通过；`npm run check`、`npm run check:pack`、`git diff --check`通过。
+- `npm run smoke:release:full` 的完整 tarball 安装、两套 Frida binding 导入、深度 doctor 和 20 个工具协议验收通过。
+- POCO F2 Pro `31936bb6` / Android 16 / ARM64：Compose 扩展 MCP matcher 连续三轮通过，每轮 70 个事件，完成清理、PID 和 ArtMethod 恢复校验；Flutter EventChannel、RN 自有 JSI/Fabric、KMP business App、MAUI long/float 证据均已归档。
+- GitHub Release：https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.4；npm `0.5.4` 待用户执行本次交付命令。
+
+当前`0.5.4`的动态关联、Flutter/Compose兼容边界和真实MAUI结果见[本轮进展](CURRENT-INCREMENT.md)。下文保留发行历史；旧版本中未通过的项不能据此推翻新证据，新证据也不扩大为全技术栈支持。
 
 ## 0.5.3 动态关联验证
 
 - 普通Java两请求跨线程逆序回复、同对象配对与父子原调用范围真机通过；对象复用/TTL历史丢失/失败清理另有回归。
-- RNTester关闭R8的独立APK，实际Java request→Promise resolve("result")→原返回通过；原R8 APK因Activity Result重复key退出，保留失败。未验证Hermes then、reject、完整JSI/Fabric。
-- Mono .NET10 ARM64 AOT：原Release仅定位；独立NoInlining APK通过完整签名/MVID/token/JIT回核，真实按钮触发2、7→46。只支持无byref的静态Int32窄ABI。
+- RNTester关闭R8的独立APK在POCO上实际验证Java request→Promise resolve("result")和`rejectPromise`→同Promise `PromiseImpl.reject(...)`→原返回；隔离 fixture 主动捕获 Hermes `new Error().stack`，显示 `rejectPromise`/`onPress` bundle 行列，并与 Java Promise 身份合并；debug inspector取得`scriptId=3`。同一POCO又验证自有新架构 APK 的 Cxx TurboModule/JSI 多类型转换和 Android Fabric/codegen 视图命令/属性重渲染，证据见 `output/rn-cxx-jsi-fabric-20261115-run7/evidence.json`。任意第三方APK自动注入、`.then()`和完整Fabric事件图仍未验证。
+- Mono .NET10 ARM64 AOT：原Release仅定位；同构建NoInlining APK通过完整签名/MVID/token/JIT回核，真实按钮触发静态/实例Int32与字符串方法，当前证据为`InstanceAdd(2,7)→50`、`Normalize("maui")→"MAUI"`。只支持无byref的Mono窄ABI，不覆盖CoreCLR/NativeAOT或内联方法。
 - WebView自有拦截页面通过fetch initiator/scriptId/源码SHA/AST与正文46；不是公网稳定性新结论。
-- Flutter Reply、Compose对象/整数状态入口注入均在当前Android16触发JNI transition崩溃，未通过，不提升支持声明。
+- Flutter Reply仍受当前Android16兼容门保护；Compose自有整数状态样本在POCO上连续三次完成点击→状态写入→重组/渲染，派生状态 `derivedStateOf(state*2)` 也在同一已安装APK上连续三次得到 `renderedDerived(2)`，证据见 `output/jni-compat-20261115/compose-three-runs.json`、`output/jni-compat-20261115/compose-derived.json` 和 `output/jni-compat-20261115/compose-derived-three-runs.json`。
 - 原Java/JNI真实设备回归与外置workspace trace-jni编译通过。配置、详细边界与关键证据见[DYNAMIC-CORRELATION.md](DYNAMIC-CORRELATION.md)及其JSON证据；
 
 ## 本地 `v0.5.1` tag 快照验证
@@ -67,7 +74,7 @@
 - 首次Java采样使用`Java.backtrace`时出现ART StackVisitor原生崩溃；关闭栈采样对照通过。改为`java.lang.Thread.currentThread().getStackTrace()`后，开启Java/Native栈的完整流程通过；未通过try/catch掩盖Native崩溃，也未改REA/设备Frida版本。失败任务与无栈对照报告保留。
 - `npm run smoke:flutter`通过：Flutter3.41.9/Dart3.11.5、Android ARM64 release自有APK，Blutter commit`4a60ac648bf448c5a7596437243bcd0b9376fdf0`。对象池唯一标记`RESERVE_FLUTTER_V03`、`reserveAdd(int,int)`汇编和两份SO的SHA256均有断言。报告`output/flutter-owned-sample/analysis-report.json`；APK未安装设备。首次VM/Blutter编译约68秒，后续使用独立缓存。
 - `npm run smoke:managed`通过：独立.NET SDK10.0.403/runtime10.0.14、ILSpy11.2.0.10050，无PackageReference的自有net10程序集离线restore/build，反编译出类型、标记、ReserveAdd和`a+b+37`。报告`output/managed-smoke/report.json`；不证明MAUI store或NativeAOT可恢复。
-- `npm run smoke:godot`通过：GDRE2.7.4将自有脚本编成Godot4.3字节码，打包新建目录，精确验证PCK四个成员且无原始.gd，再恢复并核对唯一标记、函数与表达式。报告`output/godot-smoke/report.json`；不证明Godot所有字节码/C#或任意加密容器兼容。
+- `npm run smoke:godot`通过：GDRE2.7.4将两个自有脚本编成Godot4.3字节码，打包新建目录，精确验证PCK七个成员且无原始.gd，再恢复并核对两个脚本的标记、函数与表达式。报告`output/godot-smoke/report.json`；不证明Godot所有字节码/C#或任意加密容器兼容。
 - 本轮专用Frida server PID经路径核对后已停止；自有App已force-stop，文件保留，未操作其他App或另一台手机。
 - `npm audit --omit=dev`当前0漏洞。编译器传递Frida依赖的minimatch固定11.0.1并已真实编译；这是当前锁文件快照，不是永久安全保证。
 

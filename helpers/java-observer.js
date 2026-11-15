@@ -1,10 +1,11 @@
 import { resolveNativeAddress } from './native-location.js';
 import { withJavaFactory } from './java-loaders.js';
-import { javaCompatibility } from './java-compatibility.js';
+import { javaCompatibility, verifyJavaRuntimeProfile } from './java-compatibility.js';
+import { selectJavaOverload } from './java-signature.js';
 
 // long: Java和Native共用此agent的线程栈；只将原方法执行区间内的事件关联，观测自身的JNI不混入业务证据。
-export function startJavaObserver(Java, config, env = globalThis) {
-  const compatibility = javaCompatibility(config);
+export function startJavaObserver(Java, config, env = globalThis, profile) {
+  const compatibility = javaCompatibility(config, profile ? verifyJavaRuntimeProfile(profile, env) : undefined);
   if (!compatibility.supported) {
     try { env.send({ event: 'java-compatibility-blocked', ...compatibility }); } catch {}
     return { stop() {} };
@@ -101,8 +102,7 @@ export function startJavaObserver(Java, config, env = globalThis) {
       if (!member?.overloads) throw new Error('所选成员不是可观察的Java方法');
       const overloads = member.overloads.map(method => ({ argumentTypes: method.argumentTypes.map(t => t.className), returnType: method.returnType.className }));
       if (config.action === 'java-methods') { env.clearTimeout(deadline); emit({ event: 'java-methods', className: config.className, methodName: config.methodName, loader, overloads }); return; }
-      selected = member.overload(...config.argumentTypes);
-      if (config.returnType && selected.returnType.className !== config.returnType) throw new Error('returnType与实际重载不符');
+      selected = selectJavaOverload(member, config.argumentTypes, config.returnType);
       if (selected.implementation != null) throw new Error('该方法已有本agent的实现，拒绝覆盖');
       // long: 让ART自身通过Java API读取栈，避免bridge直接遍历不同Android版本的内部StackVisitor布局导致原生崩溃。
       const javaThread = config.captureStack ? Java.use('java.lang.Thread') : null;

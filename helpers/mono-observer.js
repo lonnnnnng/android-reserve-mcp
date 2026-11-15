@@ -1,4 +1,4 @@
-// long: 只解析已加载程序集中的精确静态整数方法；不加载程序集、不执行托管业务方法，也不读取任意对象。
+// long: 只解析已加载程序集中的精确非泛型窄ABI方法；不加载程序集、不执行托管业务方法，也不解引用任意托管对象。
 export function startMonoObserver(config, env = globalThis) {
   let listener, stopped = false, sequence = 0, captured = 0, budgetReported = false;
   const emit = row => { try { env.send({ traceId: config.traceId, pid: env.Process.id, sequence: ++sequence, ...row }); } catch {} };
@@ -8,6 +8,8 @@ export function startMonoObserver(config, env = globalThis) {
     for (let i = 0; i < max; i++) if (pointer.add(i).readU8() === 0) return i ? pointer.readUtf8String(i) : '';
     throw new Error('Mono名称超过有界C字符串预算');
   };
+  const typeCode = kind => kind === 'int32' ? 8 : kind === 'bool' ? 2 : kind === 'long' ? 10 : kind === 'float' ? 12 : kind === 'string' ? 14 : null;
+  const typeName = kind => kind === 'int32' ? 'int' : kind === 'bool' ? 'bool' : kind === 'long' ? 'long' : kind === 'float' ? 'float' : 'string';
   if (env.rpc) env.rpc.exports = { ...env.rpc.exports, stopObserver: stop, dispose: stop };
   try {
     if (env.Process.arch !== 'arm64') throw new Error('Mono观测目前只验收ARM64');
@@ -22,6 +24,14 @@ export function startMonoObserver(config, env = globalThis) {
       parameter: fn('mono_signature_get_params', 'pointer', ['pointer', 'pointer']), returnType: fn('mono_signature_get_return_type', 'pointer', ['pointer']), type: fn('mono_type_get_type', 'int', ['pointer']), byref: fn('mono_type_is_byref','int',['pointer']),
       token: fn('mono_method_get_token', 'uint', ['pointer']), fullName: fn('mono_method_full_name', 'pointer', ['pointer','int']), free: fn('mono_free','void',['pointer']), compile: fn('mono_compile_method', 'pointer', ['pointer']),
       jitInfo: fn('mono_jit_info_table_find', 'pointer', ['pointer', 'pointer']), jitMethod: fn('mono_jit_info_get_method', 'pointer', ['pointer']), code: fn('mono_jit_info_get_code_start', 'pointer', ['pointer']),
+    };
+    const needsString = config.argumentTypes.includes('string') || config.returnType === 'string';
+    if (needsString) api.stringToUtf8 = fn('mono_string_to_utf8', 'pointer', ['pointer']);
+    const readString = pointer => {
+      if (pointer.isNull()) return null;
+      const utf8 = api.stringToUtf8(pointer);
+      if (utf8.isNull()) return null;
+      try { return text(utf8, 2048); } finally { api.free(utf8); }
     };
     const domain = api.root(); if (domain.isNull()) throw new Error('Mono root domain尚未建立');
     // long: Frida的专用脚本线程访问Mono前必须注册；API解析完成即detach，不把工具线程长期留在GC线程集合。
@@ -47,19 +57,20 @@ export function startMonoObserver(config, env = globalThis) {
         const method = api.methods(type, iterator); if (method.isNull()) break;
         if (++count > 4096) throw new Error('类方法超过4096项');
         if (text(api.name(method),256) !== config.methodName) continue;
-        const sig = api.signature(method); if (sig.isNull() || api.instance(sig) || api.count(sig) !== config.argumentTypes.length) continue;
-        const returns = api.returnType(sig); if (returns.isNull() || api.byref(returns) || api.type(returns) !== 8) continue;
+        const sig = api.signature(method); if (sig.isNull() || Boolean(api.instance(sig)) !== Boolean(config.instance) || api.count(sig) !== config.argumentTypes.length) continue;
+        const returns = api.returnType(sig); if (returns.isNull() || api.byref(returns) || api.type(returns) !== typeCode(config.returnType)) continue;
         const cursor = env.Memory.alloc(env.Process.pointerSize); cursor.writePointer(env.ptr(0));
         let valid = true;
-        for (let i = 0; i < config.argumentTypes.length; i++) { const t = api.parameter(sig, cursor); if (t.isNull() || api.byref(t) || api.type(t) !== 8) valid = false; }
+        for (const expected of config.argumentTypes) { const t = api.parameter(sig, cursor); if (t.isNull() || api.byref(t) || api.type(t) !== typeCode(expected)) valid = false; }
         if (valid) matches.push(method);
       }
-      if (matches.length !== 1) throw new Error('静态Int32签名必须唯一匹配，当前' + matches.length);
+      if (matches.length !== 1) throw new Error('Mono窄ABI签名必须唯一匹配，当前' + matches.length);
       const method = matches[0], token = api.token(method);
       const allocatedName = api.fullName(method,1); let fullName;
       try { fullName = text(allocatedName,1024); } finally { if (!allocatedName.isNull()) api.free(allocatedName); }
-      const expectedName = (config.namespace ? config.namespace+'.' : '') + config.className+':'+config.methodName+' ('+config.argumentTypes.map(()=>'int').join(',')+')';
-      if (fullName !== expectedName) throw new Error('完整Mono签名不符或含泛型参数：'+fullName);
+      const expectedName = (config.namespace ? config.namespace+'.' : '') + config.className+':'+config.methodName+' ('+config.argumentTypes.map(typeName).join(',')+')';
+      const normalizedName = fullName.replaceAll('System.String', 'string').replaceAll('System.Int64', 'long').replaceAll('System.Single', 'float').replaceAll('single', 'float').replaceAll('System.Boolean', 'bool').replaceAll('System.Int32', 'int');
+      if (normalizedName !== expectedName) throw new Error('完整Mono签名不符或含泛型参数：'+fullName);
       if (!token || (token >>> 24) !== 6) throw new Error('必须具有MethodDef token，不接受泛型共享或动态方法');
       if (config.allowRuntimeCompile !== true) throw new Error('需显式allowRuntimeCompile；解析可能触发Mono JIT/AOT入口准备');
       const address = api.compile(method); if (address.isNull()) throw new Error('Mono未返回可观测入口');
@@ -68,20 +79,51 @@ export function startMonoObserver(config, env = globalThis) {
       if (info.isNull() || !api.jitMethod(info).equals(method) || !api.code(info).equals(address)) throw new Error('入口无法反查到同一MonoMethod/code start');
       const range = env.Process.findRangeByAddress(address); if (!range?.protection.includes('x')) throw new Error('Mono入口不在可执行区域');
       const owner = env.Process.findModuleByAddress(address);
-      resolved = { address, identity: { runtime: 'mono', assemblyName: config.assemblyName, imageGuid: text(api.imageGuid(images[0]),128), namespace: config.namespace, className: config.className, methodName: config.methodName, fullName, argumentTypes: config.argumentTypes, returnType: 'int32', static: true, metadataToken: '0x' + token.toString(16), methodHandle: method.toString(), address: address.toString(), module: owner?.name ?? null, rva: owner ? address.sub(owner.base).toString() : null, association: 'mono-jit-info-method-identity' } };
+      resolved = { address, identity: { runtime: 'mono', assemblyName: config.assemblyName, imageGuid: text(api.imageGuid(images[0]),128), namespace: config.namespace, className: config.className, methodName: config.methodName, fullName, argumentTypes: config.argumentTypes, returnType: config.returnType, static: !config.instance, metadataToken: '0x' + token.toString(16), methodHandle: method.toString(), address: address.toString(), module: owner?.name ?? null, rva: owner ? address.sub(owner.base).toString() : null, association: 'mono-jit-info-method-identity' } };
     } finally { api.detach(thread); }
+    const readContextValue = (context, prefix, index) => {
+      const value = context?.[prefix + index];
+      if (value === undefined || value === null) throw new Error('ARM64上下文缺少' + prefix + index);
+      return value;
+    };
+    const readLong = value => {
+      const raw = value?.toInt64 ? value.toInt64().toString() : typeof value === 'bigint' ? value.toString() : String(value);
+      if (!/^0x[0-9a-f]+$/i.test(raw)) return raw;
+      let parsed = BigInt(raw);
+      if (parsed >= (1n << 63n)) parsed -= 1n << 64n;
+      return parsed.toString();
+    };
+    const readFloat = value => typeof value === 'number' ? value : value?.toFloat32 ? value.toFloat32() : value?.toDouble ? value.toDouble() : Number(value);
+    const readArgument = (kind, args, context, gpIndex, fpIndex) => {
+      if (kind === 'float') return { value: readFloat(readContextValue(context, 's', fpIndex)) };
+      const value = args[gpIndex];
+      if (!value) throw new Error('ARM64上下文缺少x' + gpIndex);
+      if (kind === 'long') return { value: readLong(value) };
+      if (kind === 'bool') return { value: value.toInt32() !== 0 };
+      if (kind === 'int32') return { value: value.toInt32() };
+      return { value: readString(value) };
+    };
+    const readReturn = (kind, value, context) => {
+      if (kind === 'long') return readLong(readContextValue(context, 'x', 0));
+      if (kind === 'float') return readFloat(readContextValue(context, 's', 0));
+      const gpReturn = context?.x0 ?? value;
+      if (kind === 'bool') return gpReturn.toInt32() !== 0;
+      if (kind === 'int32') return gpReturn.toInt32();
+      return readString(value);
+    };
     listener = env.Interceptor.attach(resolved.address, {
       onEnter(args) {
         this.capture = !stopped && captured < config.maxEvents;
         if (!stopped && !this.capture && !budgetReported) { budgetReported = true; emit({ event: 'managed-event-budget', partial: true }); }
         if (!this.capture) return;
         captured++; this.invocationId = config.traceId + ':managed:' + captured;
-        this.values = config.argumentTypes.map((_, index) => args[index].toInt32());
-        emit({ event: 'managed-enter', invocationId: this.invocationId, threadId: this.threadId, ...resolved.identity, arguments: this.values });
+        let gpIndex = config.instance ? 1 : 0, fpIndex = 0;
+        this.values = config.argumentTypes.map(kind => { const result = readArgument(kind, args, this.context, gpIndex, fpIndex); if (kind === 'float') fpIndex++; else gpIndex++; return result.value; });
+        emit({ event: 'managed-enter', invocationId: this.invocationId, threadId: this.threadId, ...(config.instance && config.captureReceiver ? { receiver: args[0].toString() } : {}), ...resolved.identity, arguments: this.values });
       },
-      onLeave(value) { if (this.capture) emit({ event: 'managed-exit', invocationId: this.invocationId, threadId: this.threadId, ...resolved.identity, outcome: 'return', returnValue: value.toInt32() }); },
+      onLeave(value) { if (this.capture) emit({ event: 'managed-exit', invocationId: this.invocationId, threadId: this.threadId, ...resolved.identity, outcome: 'return', returnValue: readReturn(config.returnType, value, this.context) }); },
     });
-    emit({ event: 'managed-hook-installed', ...resolved.identity, maxEvents: config.maxEvents, limitation: 'ARM64静态非泛型Int32边界；内联调用可能不可见，未恢复UI/异步托管因果或异常终态' });
+    emit({ event: 'managed-hook-installed', ...resolved.identity, maxEvents: config.maxEvents, limitation: 'ARM64非泛型窄ABI；字符串只读UTF-8快照，实例receiver只保留地址；内联调用可能不可见，未恢复UI/异步托管因果或异常终态' });
   } catch (error) { emit({ event: 'managed-setup-error', description: String(error).slice(0, 1200), partial: true }); stop(); }
   return { stop };
 }

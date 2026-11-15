@@ -1,19 +1,19 @@
 {
   "date": "2026-11-15",
   "version": "0.5.4",
-  "status": "local-development-validated-not-published",
+  "status": "released",
   "host": {
     "platform": "darwin",
     "arch": "arm64",
     "node": "v26.12.1"
   },
   "tests": {
-    "total": 75,
-    "passed": 75,
+    "total": 113,
+    "passed": 113,
     "failed": 0
   },
   "syntax": "passed",
-  "packageSnapshotFiles": 68,
+  "packageSnapshotFiles": 94,
   "fullInstallation": {
     "passed": true,
     "checks": {
@@ -59,7 +59,7 @@
             "bridge": {
               "package": "frida-java-bridge",
               "version": "7.0.13",
-              "implementationSha256": "ee119401893ab7353525fe181c99554cd13776c10a47e24ebf29c2d0de28a11c"
+              "implementationSha256": "f9807d3357fe7743e411fdea5e93313004edf50372f055c2ab86eb513680060f"
             },
             "compiler": {
               "package": "frida-compile",
@@ -67,8 +67,8 @@
               "implementationSha256": "4368b342a6437d86664d4a50f26ab014aec337ff5871d650e434ea3931e3bde8"
             },
             "bundle": "java-compiler/java-observer.bundle.js",
-            "bytes": 480509,
-            "sha256": "13150c5d40d0502c62d5ef7ed96029147970bea6c407bd0f114bcc13d929bc3d",
+            "bytes": 485823,
+            "sha256": "ab27f65e9cd37a80e1d2c767cf6888fb15539a16d3349261c7f0253e3ccab697",
             "injected": false
           },
           "rea": {
@@ -101,7 +101,7 @@
     }
   },
   "runtimeTree": {
-    "sha256": "c6abd3f344aba7bc2ce93a645e5b02d819d8c2b3c10bd9d72f7a8073b6d2139a",
+    "fileCount": 61,
     "files": [
       [
         "helpers/artifact.py",
@@ -112,16 +112,20 @@
         "21086a7a7eba2879253e30ba07a10e1556fe4a5d697a546f6709c4ce6e9bedfc"
       ],
       [
+        "helpers/DexQuery.java",
+        "ca882436c6a1cccfd76829aafb5f4226580ed5de00acc0732341588afa97def7"
+      ],
+      [
         "helpers/flutter-channels.py",
         "f3232b9e633efc6a4f76c7a09a48450d0770f1869adfbb3dfb38407cdb1d042f"
       ],
       [
         "helpers/java-compatibility.js",
-        "305c23b77242a666c01cb8c002ec8ddd8be5a14e7bec2affc28de6c594cd525a"
+        "cd8af972b1b8f325e039f0fc90863929c25082aec5155aa751ed8b89291716bd"
       ],
       [
         "helpers/java-group-observer.js",
-        "6171b42987a8eb5d64d037f343691b8bab252df9e7422140e38f76e30506d93d"
+        "e624aa4d1e6c941c46b018b88171485dc31a1ce3d8b4663b12c8d0f96df493eb"
       ],
       [
         "helpers/java-loaders.js",
@@ -129,7 +133,11 @@
       ],
       [
         "helpers/java-observer.js",
-        "d3bf92bdfbcc7a5bc6ddf30786bebcfcf0da87e9207d3d65694f2eb3cd9409bf"
+        "8f90f1f9acd1228aac6be2f8fe4d97d844602f17c6b910d7728cab624e265d77"
+      ],
+      [
+        "helpers/java-signature.js",
+        "dfc7be711c732e8ba1083710c3d4bb84feff36e0c5d4db37f2bfa7cbc99c92e0"
       ],
       [
         "helpers/jni-observer.js",
@@ -137,7 +145,7 @@
       ],
       [
         "helpers/MetadataInspect.java",
-        "213ddc6b3dc11a1dbc479e685de7b0ac7e5f3df311b13cab48a30f77df719f8f"
+        "1d9391de79cb0edf1a528a35b6f8e4624693c71e5109caeefeff26c430d67ab4"
       ],
       [
         "helpers/mono-observer.js",
@@ -165,7 +173,7 @@
       ],
       [
         "src/actions.js",
-        "acbb368728a5a0b2d4cc13f75bc247fb39d2574b49bd274f2e39e16633514051"
+        "a9ba783b8a3c0ce10a187178ed5c69a5d306bf8896bda74ed60060b445d54393"
       ],
       [
         "src/analysis.js",
@@ -180,8 +188,20 @@
         "64da55c4c5bcd63bd61896b1e0964cea0d016362def73f7e342e7173e3a6e2c7"
       ],
       [
+        "src/core/compose-correlation.js",
+        "d28ee22fc2d5e9477de7d77a34c5fc438466bea2e4eaaaa6ba2501abf435dd26"
+      ],
+      [
         "src/core/deadline.js",
         "14bdb2b7052aaeb7ea2cf1af3bc89af93cdea60b270e750434ccfafa2cc7be40"
+      ],
+      [
+        "src/core/dex-inputs.js",
+        "2b8f4019f78ea7f83608cb0a9a9085f05e71ee8a81012155eefb7f31da6dc65e"
+      ],
+      [
+        "src/core/dex-query.js",
+        "4fd79194e7d11e604dff89f568465155640a4fe5b6d4fa6e9d38c53a522923dd"
       ],
       [
         "src/core/diagnostics.js",
@@ -193,7 +213,7 @@
       ],
       [
         "src/core/evidence.js",
-        "ae5221fdde13f8fd408a1a092f12d7e7a666959a013c14ed7dbd4a3c49364801"
+        "ec654480b782b6fa61f723c6d9592ea7945246c107efc6ba20f9083018a70afa"
       ],
       [
         "src/core/frida-scripts.js",
@@ -201,7 +221,11 @@
       ],
       [
         "src/core/java-agent.js",
-        "7ca52df484429acdcabdf7c7b0cfb215e456dd19eb27a715973722091a593f92"
+        "e34f16477bdcc2253cefe05315bc34f03dfd4557aa06d8792e975c2b3fc2a3d4"
+      ],
+      [
+        "src/core/java-profile.js",
+        "65bbed7cc1e42da256d5076e4514b111e7fcf6e1981ca4bcd2cb34978fc4498d"
       ],
       [
         "src/core/jobs.js",
@@ -209,11 +233,19 @@
       ],
       [
         "src/core/kotlin.js",
-        "440a37bada75b91d139f0c5bef4627f81a3789776f6b441e27ad75ee8b98afc8"
+        "80aab3543157f0ff52e630026458aee48dd5592f4ae441b3526ed58d4870cfa8"
       ],
       [
         "src/core/managed.js",
         "3b0a4ff0bba88b549b668f5b298262fb8cf1bf02678841d90d9b992a6333428f"
+      ],
+      [
+        "src/core/mapping.js",
+        "d796e498b15052b25b7b1372a151b28b97b6929a7d7b1ba19c9abc39b939cca5"
+      ],
+      [
+        "src/core/method-id.js",
+        "9111bd87eb11528aaff5eab08c89fd435b6ca695f32d5d5d1d815426328d9ef7"
       ],
       [
         "src/core/mono-agent.js",
@@ -225,7 +257,7 @@
       ],
       [
         "src/core/packages.js",
-        "b085bd3cad962fc5137be91c4ed2ffb026a3a5bf2071e4320f4c8351b16e2c6d"
+        "d258b3a542578f1aff88585b9240e250342b08d47b36a5476e7fc2b9d4c93db1"
       ],
       [
         "src/core/paths.js",
@@ -236,33 +268,194 @@
         "2939713fb4adf18ff4cafa5ae7eec1c78c0c3096c3d07d652239a0b1829788fe"
       ],
       [
+        "src/core/rn-cdp.js",
+        "7d2f083455736450e9970b1371d2be0e8deb56cc685de34b940e3ff4d2ced1b3"
+      ],
+      [
         "src/core/webview.js",
         "b8fb40f2b0b06444740a80d4d589f044a2f0747b301ef308e47ab7c6637a8947"
       ],
       [
         "src/server.js",
-        "febd326815a5a55fb1ff88257133717c23fc1eb9e589e701b28187525cbc2c86"
+        "8e00ca774ec363a47bf107e43e283c96172de7f44bf157a1e47551c03064e786"
       ],
       [
         "src/version.js",
         "703c381fe7e6a78dfd9bc4cf239dd651ba10b28ac0a34064ceb67c23afb8d435"
+      ],
+      [
+        "vendor/frida-java-bridge/index.js",
+        "2dac3a8e2c7424965a6462c970a937d065a094d0e740a51a59373386836baa7c"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/alloc.js",
+        "6e075106d5fdcf8f214d19c0853d4189058fe84a8f125a42e12a14702411f842"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/android.js",
+        "f9807d3357fe7743e411fdea5e93313004edf50372f055c2ab86eb513680060f"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/api.js",
+        "e96838e75876ef864edbb64779ec8e21d9809b30fa4b2c90dde6be7d5a8c379a"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/class-factory.js",
+        "3eb32484c31d0499a4433a69209e2d6c7491e6fedc7dff66a265e8f2b279539a"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/class-model.js",
+        "48f6b9da88ead79b109358fb7866aa5d10be1711c8a4a7693f876397b22b5010"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/env.js",
+        "eb30578946d7e0960e36d6304c791f4f80fea7e0087e0d8c7529117bd91cbf22"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/jvm.js",
+        "20bd6380e3f7962001f9ddae26bd58b7e993c3c8dbc295a5bbe46c7345e29495"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/jvmti.js",
+        "6338cb2a3564ea4b2eaac7282ae754e3a832b47926ae1b62d2dd6cbcdac013bc"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/lru.js",
+        "c2eea2d4a971a15802a867de03ac87ddf518ba253e48db44f13f5da7ff650f05"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/machine-code.js",
+        "755efcde08d7a8f91febe3f9b7ea67ea7a4d3e0d77a6c9fc5fd1840c769c5232"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/memoize.js",
+        "a211f4dd4fffca41614871cd52a29270cfbb7d6089b1ec73c2caec7c2e8a49c6"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/mkdex.js",
+        "6cdbf39ffe807879a232ba04e4c7e4ffdd5b30415d1fe1ee452f818a40d0d005"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/result.js",
+        "2ea95df312da5b30191fd51f21b8146c7f3bccd499e4f38d2cfd0624592fa57e"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/types.js",
+        "f596af52e3bd18594d0918df9355b0cd41ebdb9587223ac40674445f39eabd7f"
+      ],
+      [
+        "vendor/frida-java-bridge/lib/vm.js",
+        "62b8ffe5274af8642a85823366a9ea782d409d3ae92ab5b7fd4aa4a4a4417a46"
       ]
-    ]
+    ],
+    "sha256": "832b991b31716c6352344bf15e776677339c1da615c126b12a7ed72c9218e166"
   },
   "device": {
     "model": "POCO_F2_Pro",
     "serial": "31936bb6",
     "android": "16",
     "abi": "arm64-v8a",
-    "dynamicGate": "pending"
+    "dynamicGate": "verified-for-poco-art36-frida17.23.2"
   },
   "remaining": [
-    "mapping-and-exact-method-identity",
-    "split-query",
-    "Compose-click-state-recomposition",
-    "Flutter-arguments-reply",
-    "RN-reject-JS-callsite",
-    "three-consecutive-device-regressions",
-    "MAUI-KMP-Godot-expansion"
-  ]
+    "RN-third-party-injection-and-third-party-full-JSI-Fabric-causality",
+    "MAUI-array-object-ABI",
+    "Godot-version-CSharp-fixtures"
+  ],
+  "finalAcceptance": {
+    "status": "passed",
+    "commands": [
+      "npm test",
+      "npm run check",
+      "npm run check:pack",
+      "npm run smoke:release:full",
+      "npm run smoke:dex",
+      "npm run smoke:kotlin"
+    ],
+    "packageManifest": "output/stability-20261115/package-manifest.json",
+    "javaHelperCompile": "output/stability-20261115/java-helper-compile.json",
+    "validation": "output/stability-20261115/final-validation.json",
+    "deviceAccessed": true,
+    "dynamicEvidence": [
+      "docs/evidence/framework-dynamic-20261114.json",
+      "output/jni-compat-20261115/compose-three-runs.json",
+      "output/jni-compat-20261115/compose-derived.json",
+      "output/rn-reject-run2/evidence.json",
+      "output/rn-stack-java/evidence.json",
+      "output/jni-compat-20261115/flutter-compatibility-20261115.json",
+      "output/device-smoke/jni-report-prior-success-20261114.json",
+      "output/device-smoke/jni-report.json",
+      "output/jni-compat-20261115/compose-derived-three-runs.json",
+      "output/rn-hermes-cdp-scriptid/merged-evidence.json",
+      "output/rn-cxx-jsi-fabric-20261115-run7/evidence.json",
+      "output/maui-wide-static-20261115/device-validation.json",
+      "output/kmp-owned-20261115-publication/evidence.json",
+      "output/godot-smoke/report.json",
+      "output/dex-latest-report.json",
+      "output/maui-wide-static-20261115/mono-instance-runtime3/validation.json",
+      "output/maui-wide-static-20261115/mono-normalize-runtime2/validation.json",
+      "output/rn-third-party-probe-20261115-tap2/evidence.json",
+      "output/rn-cxx-causal-20261115-run7/evidence.json",
+      "output/rn-cxx-causal-20261115-run8/evidence.json",
+      "output/rn-cxx-causal-20261115-run9/evidence.json",
+      "output/flutter-owned-bridge-20261115/evidence.json",
+      "output/kmp-business-20261115/evidence.json",
+      "output/maui-bool-20261115/validation.json",
+      "output/flutter-owned-bridge-event-20261115-pass/validation.json",
+      "output/compose-extended-20261115/evidence.json",
+      "output/compose-extended-mcp-20261115/three-runs.json",
+      "output/maui-long-float-ui-20261115/evidence.json",
+      "output/maui-long-float-dynamic-20261115/evidence.json"
+    ],
+    "interpretation": "POCO正式入口已验证Flutter typed-NewLocalRef bridge；自有 Flutter R8 fixture 的primitive/object MethodChannel与EventChannel EventSink多次回复均通过，EventSink为R8 k5.a(Integer)；Compose基础/derived链三次通过，扩展fixture已在POCO通过MCP多链验证状态、导航、多状态和LaunchedEffect coroutine；RN自有fixture已连续三轮闭合JSI_CALL_ID、C++ native marker、Fabric event ID与render sequence；KMP业务App已完成commonMain sharedNormalize到Android UI/logcat/JADX回链；MAUI已捕获实例Int32、字符串、bool、long和float方法，long/float使用ARM64 GP/FP上下文解码；Godot双GDScript/双场景与生产多DEX mapping回归通过。第三方APK静默注入、第三方完整JSI/Fabric、MAUI array/object ABI、Godot多版本/C#仍未验收，跨设备/ROM按条件跳过。"
+  },
+  "dynamicGate": "verified-for-poco-art36-frida17.23.2",
+  "flutterBridgeRootCause": {
+    "status": "verified-for-poco-art36-frida17.23.2",
+    "evidence": "output/jni-compat-20261115/flutter-compatibility-20261115.json",
+    "candidateBridgeSha256": "0343150a2f1670490a965e560bf9df888486fe1fff10258eec64f925b80b74d3",
+    "device": "POCO_F2_Pro/31936bb6/Android16/arm64-v8a",
+    "notEnabled": false,
+    "nextGate": "跨设备/ROM矩阵暂缓，待有第二台授权设备后再执行；当前继续保持POCO/ART36/Frida17.23.2 profile限制",
+    "vendorBridgeSha256": "0343150a2f1670490a965e560bf9df888486fe1fff10258eec64f925b80b74d3",
+    "formalVendorRun": "output/jni-compat-20261115/flutter-formal-positive/validation.json",
+    "profileStatus": "verified-for-poco-art36-frida17.23.2"
+  },
+  "skipped": [
+    {
+      "item": "Flutter-cross-device-ROM-matrix",
+      "status": "skipped-by-current-device-constraint",
+      "reason": "用户明确要求本轮只使用 POCO F2 Pro，当前没有第二台可授权设备"
+    },
+    {
+      "item": "three-consecutive-device-regressions-cross-ROM",
+      "status": "skipped-by-current-device-constraint",
+      "reason": "用户明确要求跳过跨设备/ROM 回归"
+    }
+  ],
+  "completed": [
+    "production-multidex-mapping-regressions",
+    "RN-debug-Hermes-CDP-scriptId-fixture-association",
+    "MAUI-wide-ABI-fixture",
+    "KMP-commonMain-Android-iOS-publication-fixture",
+    "RN-Cxx-JSI-Fabric-owned-fixture",
+    "Godot-dual-GDScript-scene-fixture",
+    "MAUI-Mono-instance-string-dynamic-hook",
+    "RN-owned-JSI-Fabric-explicit-causal-chain-three-runs",
+    "Flutter-owned-R8-mapping-primitive-object-channel-fixture",
+    "KMP-business-app-shared-code-relink",
+    "MAUI-Mono-bool-ABI-dynamic-hook",
+    "Compose-extended-fixture-builder-code",
+    "EventChannel-multiReply-correlation-matcher",
+    "Flutter-EventChannel-dynamic-EventSink-correlation",
+    "Compose-navigation-multistate-coroutine-fixture-POCO",
+    "MAUI-long-float-business-execution-fixture",
+    "MAUI-Mono-long-float-ARM64-dynamic-hook",
+    "Compose-navigation-multistate-coroutine-MCP-correlation"
+  ],
+  "release": {
+    "tag": "v0.5.4",
+    "github": "https://github.com/lonnnnnng/android-reserve-mcp/releases/tag/v0.5.4",
+    "npm": "manual-user-publish"
+  }
 }

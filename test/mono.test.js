@@ -46,3 +46,12 @@ test('Mono固定模板要求明确编译许可与窄ABI，不接受泛型/任意
   assert.throws(()=>monoTraceScript({monoTarget:{...f.config,className:'App`1'}}),/非泛型/);
   assert.throws(()=>monoTraceScript({...args,maxEvents:99999}),/预算/);
 });
+
+test('Mono允许显式实例与字符串及float窄ABI，并拒绝未知类型', () => {
+  const f = fixture();
+  const script = monoTraceScript({ monoTarget: { ...f.config, methodName: 'Normalize', argumentTypes: ['string'], returnType: 'string', instance: true, captureReceiver: true } });
+  assert.match(script, /Normalize/);
+  assert.doesNotThrow(() => monoTraceScript({ monoTarget: { ...f.config, argumentTypes: ['float'], returnType: 'float' } }));
+  assert.throws(() => monoTraceScript({ monoTarget: { ...f.config, argumentTypes: ['pointer'] } }), /Int32\/bool\/long\/float\/string/);
+  assert.throws(() => monoTraceScript({ monoTarget: { ...f.config, instance: 'yes' } }), /instance/);
+});

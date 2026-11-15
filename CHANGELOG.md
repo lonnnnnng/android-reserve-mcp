@@ -1,14 +1,18 @@
 # 变更记录
 
-## 0.5.4 — 2026-11-15（开发中，尚未发布）
+## 0.5.4 — 2026-11-15（GitHub Release；npm 由用户手动发布）
 
-- 已知 Flutter Reply/Compose 状态入口在编译、进程占位和注入前拒绝，返回结构化 `java_compatibility_blocked`；固定 helper 也执行相同保护。
+- 已知 Flutter MethodChannel handler/reply 与 Compose 状态入口在编译、进程占位和注入前拒绝，返回结构化 `java_compatibility_blocked`；固定 helper 也执行相同保护。
 - 每个任务记录实例、PID 和进程代次；其他实例只读状态，不改写活跃任务或取消他人任务。拥有者结束后派生 `interrupted`，设备清理单独标未确认。
 - WebView 请求证据保留来源快照，旧 pending 不覆盖终态；冲突终态与快照预算标 partial。正文哈希明确连接同会话请求，缓存、Service Worker 和重定向截断保留。
 - REA 启动/握手、整体任务与退出都有期限；连接中取消不影响其他等待者，晚到握手不重新登记。未确认清理写入 shutdown 账本。
 - `doctor.deep` 实际导入 binding、编译固定 Java 模板和握手 REA；新增完整 tarball 安装门禁与 Ubuntu/macOS CI 配置。
-- 最终75项测试、语法/包检查和实际完整安装通过；两套Frida binding实际导入与退出账本确认完成，36个运行源码文件与安装快照SHA一致。远端CI尚未运行。
-- 动态兼容修复、mapping/完整签名/分包查询和连续三次真机门槛仍在推进，见 `docs/STABILITY-20261115.md`。
+- 发布门通过113项测试、源码语法检查、94项发布清单和实际完整tarball安装验收；两套Frida binding实际导入、深度诊断、DEX/Kotlin smoke和 Java helper 编译均通过。POCO Compose 扩展链连续三轮通过，跨设备/ROM按用户约束跳过。
+- Flutter Android16 bridge 根因已确认；vendor typed-NewLocalRef bridge 在POCO/ART36/Frida17.23.2正式入口通过success/error、typed String[]、ArrayList同步/跨线程与stress。跨设备/ROM矩阵仍待补齐；静态DEX/Kotlin闭环见 `docs/STABILITY-20261115.md`。
+- RN 自有新架构 ARM64 fixture 在 POCO 上通过 Cxx TurboModule/JSI 多类型参数转换、异步 Promise 与 Android Fabric/codegen 视图命令/属性重渲染；新增 `scripts/rn-cxx-jsi-fabric-smoke.mjs`，证据保留为 fixture-only，不扩大到任意第三方 APK 自动注入。
+- Mono observer 扩展为显式实例/字符串窄 ABI；POCO NoInlining MAUI fixture 捕获 `InstanceAdd(2,7) -> 50` 与 `Normalize("maui") -> "MAUI"`，仍拒绝 byref、泛型、CoreCLR/NativeAOT 和内联方法。
+- 新增 `scripts/rn-third-party-probe.mjs`：对已开放 Metro inspector 的第三方 RN APK 做包/PID/页面/`scriptId` 校验和可选 UI 触发，未开放时 fail-closed；不执行静默 JS 注入，不把 UI 变化伪装成完整 JSI/Fabric 因果。
+- Compose 扩展 fixture 由 MCP matcher 完成 `click→write→render→derived`、多状态、导航 route write 和 coroutine 四链，POCO 连续三轮通过；Flutter R8 EventChannel `k5.a(Integer)` 同 sink `1,2` 回复关联；MAUI Mono long/float 使用 ARM64 GP/FP 解码；KMP business App 完成 `commonMain` 回链。
 
 ## 0.5.3 — 2026-11-14
 

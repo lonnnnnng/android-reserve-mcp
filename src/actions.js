@@ -18,6 +18,8 @@ import { monoTraceScript } from './core/mono-agent.js';
 import { assertJavaCompatibility } from '../helpers/java-compatibility.js';
 import { withDeadline } from './core/deadline.js';
 import { deepDiagnostics } from './core/diagnostics.js';
+import { rawDexQuery } from './core/dex-query.js';
+import { prepareJavaCompatibility } from './core/java-profile.js';
 import { WebViews } from './core/webview.js';
 import { kotlinMetadata } from './core/kotlin.js';
 export { webview } from './core/webview.js';
@@ -34,7 +36,7 @@ const required = (value, name) => { if (value === undefined || value === '') thr
 export async function createContext(options = {}) {
   const paths = await Paths.create(options.allowedRoots || [process.cwd()], options.workspace || path.join(os.homedir(), '.local/share/android-reserve-mcp'));
   const jobs = new Jobs(paths.workspace, { closeTimeoutMs: options.jobCloseTimeoutMs || 10000 }); await jobs.init();
-  return { paths, jobs, backend: options.backend || new Backend(options), webviews: options.webviews || new WebViews(options.adb, paths.workspace), nativeTargets: new NativeTargets(options.nativeFactory || (() => new Backend({ ...options, nativeEngine: true }))), sessions: new Set(), sessionTargets: new Map(), scripts: new Map(), javaObservers: new Map(), compileJava: options.javaCompiler || compileJavaAgent,
+  return { paths, jobs, backend: options.backend || new Backend(options), webviews: options.webviews || new WebViews(options.adb, paths.workspace), nativeTargets: new NativeTargets(options.nativeFactory || (() => new Backend({ ...options, nativeEngine: true }))), sessions: new Set(), sessionTargets: new Map(), scripts: new Map(), javaObservers: new Map(), javaBridgeRoot: options.javaBridgeRoot, compileJava: options.javaCompiler || ((args, dir, signal) => compileJavaAgent(args, dir, signal, { bridgeRoot: options.javaBridgeRoot })),
     skillRoots: options.skillRoots || [path.join(os.homedir(), '.config/opencode/skills')],
     async close() {
       if (this.closing) return this.closing;
@@ -149,7 +151,9 @@ export async function decode(context, args) {
 
 export async function dex(context, args) {
   if (args.action === 'kotlin') return kotlinMetadata(context, args);
-  const input = await context.paths.input(args.path);
+  if (args.methodId || args.descriptor || args.definitionId || args.packageJobId || args.mappingPath || args.members || args.includeSource) return rawDexQuery(context, args);
+  const input = await context.paths.input(args.path, { directory: null });
+  if ((await fs.stat(input)).isDirectory() || input.toLowerCase().endsWith('.apks')) return rawDexQuery(context, args);
   const names = { classes: 'search_android_classes', class: 'inspect_android_class', method: 'inspect_android_method', references: 'trace_android_references' };
   const parameters = { path: input };
   if (args.action === 'classes') parameters.query = args.query || '';
@@ -274,7 +278,9 @@ export async function frida(context, args) {
   if (['java-methods', 'trace-java'].includes(args.action)) { required(args.className, 'className'); required(args.methodName, 'methodName'); }
   if (args.action === 'trace-java' && !Array.isArray(args.argumentTypes)) throw new Error('trace-java必须显式argumentTypes，空参数使用[]；先java-methods读取实际重载');
   if (args.action === 'trace-java-group') validateJavaGroup(args);
-  assertJavaCompatibility(args);
+  const compatibilityProfile = javaAction ? await prepareJavaCompatibility(context, args) : undefined;
+  assertJavaCompatibility(args, compatibilityProfile);
+  if (compatibilityProfile) args = { ...args, _compatibilityProfile: compatibilityProfile };
   if (args.action === 'trace-java') for (const hook of args.nativeHooks || []) validateNativeHook(hook);
   if (args.action === 'unload') {
     parameters.script_id = required(args.scriptId, 'scriptId');
@@ -312,7 +318,7 @@ export async function frida(context, args) {
     const record = structured(result), observation = record.normalized_result || record;
     if (args.action === 'status') {
       const observer = context.javaObservers.get(args.sessionId);
-      const failure = observer?.scriptId && (observation.messages || []).find(message => message.script_id === observer.scriptId && (message.type === 'error' || ['java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'managed-setup-error', 'native-hook-error', 'module-wait-timeout'].includes(message.payload?.event)));
+      const failure = observer?.scriptId && (observation.messages || []).find(message => message.script_id === observer.scriptId && (message.type === 'error' || ['java-compatibility-blocked', 'java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'managed-setup-error', 'native-hook-error', 'module-wait-timeout'].includes(message.payload?.event)));
       if (failure) {
         // long: spawn的Java安装会延后到resume；只处理当前脚本的晚到失败，旧脚本历史消息不能撤销新观测。
         reservation = observer; loadedId = observer.scriptId; managedFailure = true;
@@ -327,7 +333,7 @@ export async function frida(context, args) {
       if (reservation) { reservation.scriptId = loadedId; reservation.state = 'loaded'; }
     }
     if (generated || javaAction) {
-      const failure = (observation.messages || []).find(message => (!loadedId || !message.script_id || message.script_id === loadedId) && (message.type === 'error' || ['java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'managed-setup-error', 'native-hook-error'].includes(message.payload?.event)));
+      const failure = (observation.messages || []).find(message => (!loadedId || !message.script_id || message.script_id === loadedId) && (message.type === 'error' || ['java-compatibility-blocked', 'java-setup-error', 'java-setup-timeout', 'java-unavailable', 'jni-setup-error', 'jni-unavailable', 'managed-setup-error', 'native-hook-error'].includes(message.payload?.event)));
       if (failure) {
         const error = new Error('观测脚本加载失败：' + String(failure.description || failure.stack || failure.payload?.description || failure.payload?.event || '查看error.json').slice(0, 800));
         error.diagnostic = result; throw error;

@@ -38,5 +38,15 @@ try{
  const merged=await completeJob(c,evidence(c,{action:'merge',jobIds:[analyzed.job.id]}),results);
  const queried=await evidence(c,{action:'query',graphJobId:merged.job.id,query:'flow',kind:'java-method'});assert.ok(queried.nodes.some(n=>n.suspend));
  const composeQuery=await evidence(c,{action:'query',graphJobId:merged.job.id,query:'state-write-candidate',kind:'compose-signal-candidate'});assert.ok(composeQuery.nodes.some(n=>n.signature.includes('composeCounter(')));
- console.log('真实Kotlin metadata/suspend/inline、Compose Composer及状态/lambda编译调用候选、DEX签名与持久证据关联通过');
+ // long: 真实编译1001个函数，验证类内截断数量能被单独读取，不以手写报告模拟metadata覆盖。
+ const largeSource=path.join(root,'LargeOwned.kt'),largeClasses=path.join(root,'large-classes'),largeDex=path.join(root,'large-dex');await fs.mkdir(largeClasses);await fs.mkdir(largeDex);
+ await fs.writeFile(largeSource,'package owned\nclass LargeOwned {\n'+Array.from({length:1001},(_,index)=>'fun f'+index+'(): Int = '+index).join('\n')+'\n}\n');
+ checked(await run(await tool('java'),['-Xmx1024m','-cp',cp.join(path.delimiter),'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler','-no-stdlib','-no-reflect','-jvm-target','1.8','-classpath',stdlib,'-d',largeClasses,largeSource],{timeoutMs:120000}),'真实大类Kotlin编译');
+ checked(await run(await tool('d8'),['--lib',path.join(sdk,'platforms/android-36/android.jar'),'--lib',stdlib,'--output',largeDex,path.join(largeClasses,'owned/LargeOwned.class')]),'真实大类转DEX');
+ const started=await dex(c,{action:'kotlin',path:path.join(largeDex,'classes.dex'),query:'owned.LargeOwned'});let largeJob;
+ for(let attempt=0;attempt<2400;attempt++){largeJob=await c.jobs.get(started.id);if(!['queued','running'].includes(largeJob.state))break;await new Promise(resolve=>setTimeout(resolve,250));}
+ results.push(c.jobs.summary(largeJob));assert.equal(largeJob.state,'partial',largeJob.error);
+ const largeReport=JSON.parse(await fs.readFile(path.join(largeJob.dir,'kotlin.json'),'utf8')),large=largeReport.classes.find(row=>row.className==='owned.LargeOwned');
+ assert.equal(large.functionCount,1001);assert.equal(large.functions.length,1000);assert.equal(large.functionsTruncated,true);assert.equal(large.partial,true);
+ console.log('真实Kotlin metadata/suspend/inline、Compose编译候选、DEX证据及1001函数类内截断计数通过');
 }finally{await fs.writeFile(path.join(root,'report.json'),JSON.stringify({root,results,deviceAccessed:false},null,2));await fs.writeFile(path.join(base,'kotlin-latest-report.json'),JSON.stringify({root,results},null,2));await c.close();}

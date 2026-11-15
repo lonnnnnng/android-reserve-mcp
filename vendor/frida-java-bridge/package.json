@@ -1,0 +1,26 @@
+{
+  "name": "frida-java-bridge",
+  "version": "7.0.13",
+  "description": "Java runtime interop from Frida",
+  "keywords": [
+    "frida-gum",
+    "frida-gum-bridge"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "/index.js",
+    "/index.d.ts",
+    "/lib/**/*.js",
+    "/lib/**/*.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frida/frida-java-bridge.git"
+  },
+  "license": "LGPL-2.0 WITH WxWindows-exception-3.1",
+  "bugs": {
+    "url": "https://github.com/frida/frida-java-bridge/issues"
+  },
+  "homepage": "https://github.com/frida/frida-java-bridge#readme"
+}

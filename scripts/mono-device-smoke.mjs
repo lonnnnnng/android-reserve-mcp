@@ -8,6 +8,8 @@ import { run, checked, tool } from '../src/core/process.js';
 const [serial, packageName, configPath, workspace, x, y] = process.argv.slice(2);
 if (!/^[A-Za-z0-9._:-]+$/.test(serial || '') || !/^[A-Za-z][A-Za-z0-9_.]+$/.test(packageName || '') || !configPath || !workspace || ![x,y].every(v => /^\d{1,4}$/.test(v || ''))) throw new Error('用法: mono-device-smoke.mjs SERIAL PACKAGE CONFIG WORKSPACE TAP_X TAP_Y');
 const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
+const expectedReturnValue = config.expectedReturnValue ?? 46;
+const expectedArguments = config.expectedArguments ?? [2, 7];
 const c = await createContext({ workspace }), results = [], events = new Map();
 const normal = v => { const r = v.structuredContent || (v.content ? JSON.parse(v.content[0].text) : v); return r.normalized_result || r; };
 const complete = args => completeJob(c, frida(c, args), results);
@@ -23,11 +25,11 @@ try {
     if (status.state === 'detached') throw new Error('Mono目标意外退出');
     const rows = [...events.values()];
     if (!driven && rows.some(e => e.event === 'managed-hook-installed')) { await adb(['shell','input','tap',x,y]); driven = true; }
-    if (rows.some(e => e.event === 'managed-exit' && e.returnValue === 46)) { passed = true; break; }
+    if (rows.some(e => e.event === 'managed-exit' && e.returnValue === expectedReturnValue)) { passed = true; break; }
     await new Promise(r => setTimeout(r,500));
   }
-  assert.equal(passed,true,'未观察到运行时回核方法的真实返回46；内联/未触发仍属缺口');
-  const enter = [...events.values()].find(e => e.event === 'managed-enter'); assert.deepEqual(enter.arguments,[2,7]);
+  assert.equal(passed,true,`未观察到运行时回核方法的真实返回${expectedReturnValue}；内联/未触发仍属缺口`);
+  const enter = [...events.values()].find(e => e.event === 'managed-enter'); assert.deepEqual(enter.arguments, expectedArguments);
   await complete({ action: 'unload', sessionId, scriptId });
   console.log(JSON.stringify({ passed, events: [...events.values()] }));
 } catch (e) { error = String(e); throw e; }

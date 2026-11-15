@@ -131,7 +131,7 @@ unzip "$engine_root/GDRE_tools-v2.7.4-macos.zip" -d "$engine_root/gdre-2.7.4"
 
 2.7.4的版本命令打印正确版本但exit1，这是本轮实测；适配器仅在该探测有版本标识且无超时/取消时接受，不把分析exit1当成功。自定义入口使用`ANDROID_RESERVE_GDRE`。
 
-`npm run smoke:godot`每次新建样本目录，用GDRE自身编译Godot4.3 GDScript字节码、打PCK并恢复，不额外安装Godot editor或export templates。PCK清单严格为编译脚本、remap、场景和project配置四项，排除明文脚本假阳性；恢复后检查实际代码语义。
+`npm run smoke:godot`每次新建样本目录，用GDRE自身编译Godot4.3的两个GDScript、打PCK并恢复，不额外安装Godot editor或export templates。PCK清单包含两个编译脚本、两个remap、两个场景和project配置七项，排除明文脚本假阳性；恢复后检查两个脚本的实际代码语义。
 
 ## 升级与失败处理
 
@@ -140,6 +140,8 @@ unzip "$engine_root/GDRE_tools-v2.7.4-macos.zip" -d "$engine_root/gdre-2.7.4"
 当前私有.NET10 SDK已安装maui-android。若需要自行复现，先确认目标SDK在用户可写目录、磁盘充足；在其子进程设置DOTNET_ROOT、DOTNET_ROOT_ARM64、DOTNET_CLI_HOME、NUGET_PACKAGES后运行dotnet workload install maui-android --skip-manifest-update --disable-parallel。此安装会下载约数GB到私有SDK，不需要更改全局.NET或sudo。不要对只读系统SDK照搬。
 
 使用node scripts/maui-owned-build.mjs NEW_SAMPLE_DIRECTORY生成全新的net10.0-android ARM64 Release测试工程；脚本保留现有目录，引用examples/fixtures/maui-app.cs，关闭MarshalMethods，创建纯C#测试页面。构建需要Android SDK/JDK21及NuGet网络；不自动安装Android SDK组件或手机APK。日志和APK保存在样本目录。分析工作区放到工程外，避免默认Compile包含ILSpy生成的.cs。构建后运行maui-apk-smoke.mjs完成独立静态链，再按明确serial做设备验收。当前实测与限制见CURRENT-INCREMENT.md。
+
+KMP自有第三方形态fixture使用`KMP_GRADLE=/absolute/path/to/gradle node scripts/kmp-owned-smoke.mjs NEW_SAMPLE_DIRECTORY`；它分别编译`commonMain` metadata、Android target和iOS Simulator framework，并把 publication、klib、pom、module写入隔离 Maven 仓库，构建目录必须是全新路径。当前机器使用已存在的Gradle 9.5.x发行目录，系统Gradle 9.9可能与AGP不兼容；证据只证明自有输入的构建/publication身份，不代表任意业务App共享代码回链。
 
 保留当前可用引擎和缓存，用新目录安装候选版本、记录源码commit/制品哈希，配置变量指向新版本后重启MCP并重跑相应自有样本。失败则恢复原变量/目录，不删除用户目标或其他引擎。默认发现路径包含部分固定版本，改版本时要同步代码、安装文档和验收矩阵。
 

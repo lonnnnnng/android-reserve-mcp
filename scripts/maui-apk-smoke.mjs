@@ -33,6 +33,11 @@ try {
   const code = await complete(framework(c, { action: 'analyze', engine: 'ilspy', path: path.join(refs, assemblyName), referencePath: refs }));
   const sources = (await Promise.all(code.result.files.filter(row => row.path.endsWith('.cs')).map(row => fs.readFile(path.join(code.job.dir, 'output', row.path), 'utf8')))).join('\n');
   assert.ok(sources.includes(marker)); assert.match(sources, /a\s*\+\s*b\s*\+\s*37/);
+  if (process.argv.includes('--wide-abi')) {
+    assert.match(sources, /InstanceAdd\s*\(\s*int\s+a\s*,\s*int\s+b\s*\)/);
+    assert.match(sources, /Normalize\s*\(\s*string\s+value\s*\)/);
+    assert.match(sources, /ToUpperInvariant\s*\(\)/);
+  }
   passed = true;
   console.log(JSON.stringify({ passed, storeVersion: store.result.version, assemblies: store.result.entries.length, references: code.result.references.length, results }));
 } finally {

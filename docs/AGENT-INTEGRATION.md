@@ -2,19 +2,19 @@
 
 `android-reserve-mcp` 是一个本地 MCP stdio 服务。Agent 启动一个 Node.js 子进程，通过标准输入输出调用它；当前项目没有把 MCP 协议暴露成公网 HTTP 服务。需要远程使用时，应在运行 Agent 的机器上部署本项目，或另外部署受控的 MCP 网关。
 
-当前发布版：`0.5.3`。要求 Node.js `>=26.12.1`。
+当前发布版：`0.5.4`。要求 Node.js `>=26.12.1`。
 
 ## 通用准备
 
 ```zsh
-npm install -g android-reserve-mcp@0.5.3
+npm install -g android-reserve-mcp@0.5.4
 node "$(npm root -g)/android-reserve-mcp/src/cli.js" --version
 ```
 
-需要当前 `0.5.3` 源码时，使用 GitHub tag：
+需要当前 `0.5.4` 源码时，使用 GitHub tag：
 
 ```zsh
-git clone --branch v0.5.3 https://github.com/lonnnnnng/android-reserve-mcp.git
+git clone --branch v0.5.4 https://github.com/lonnnnnng/android-reserve-mcp.git
 cd android-reserve-mcp
 npm ci --ignore-scripts
 ```

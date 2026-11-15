@@ -20,7 +20,7 @@ xml = xml.replace('</Project>', '<PropertyGroup><EnableDefaultXamlItems>false</E
 await fs.writeFile(project, xml);
 let app = await fs.readFile(fileURLToPath(new URL('../examples/fixtures/maui-app.cs', import.meta.url)), 'utf8');
 // long: 动态验收必须单列禁止内联的样本，不能用它冒充原Release APK的调用覆盖率。
-if (process.argv.includes('--dynamic')) app = app.replace('public static int ReserveAdd', '[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]\n    public static int ReserveAdd').replace('RESERVE_MAUI_REAL_V05', 'RESERVE_MAUI_DYNAMIC_V06');
+if (process.argv.includes('--dynamic')) app = app.replace('public static int ReserveAdd', '[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]\n    public static int ReserveAdd').replace('public int InstanceAdd', '[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]\n    public int InstanceAdd').replace('public string Normalize', '[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]\n    public string Normalize').replace('public bool IsPositive', '[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]\n    public bool IsPositive').replace('RESERVE_MAUI_REAL_V05', 'RESERVE_MAUI_DYNAMIC_V06');
 await fs.writeFile(path.join(target, 'App.xaml.cs'), app);
 const manifest = path.join(target, 'Platforms/Android/AndroidManifest.xml');
 await fs.writeFile(manifest, (await fs.readFile(manifest, 'utf8')).replace(/android:(?:roundIcon|icon)="[^"]*"/g, ''));

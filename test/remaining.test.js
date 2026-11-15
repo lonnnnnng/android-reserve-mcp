@@ -4,13 +4,19 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { validatePackageSet } from '../src/core/packages.js';
+import { parseSignerCertificates, validatePackageSet } from '../src/core/packages.js';
 import { indexEvidence } from '../src/core/evidence.js';
 import { createContext, resources, script } from '../src/actions.js';
 import { withJavaFactory } from '../helpers/java-loaders.js';
 import { run, tool } from '../src/core/process.js';
 
 const member = (split, options={}) => ({ source:split||'base',manifest:{package:'dev.owned.app',version_code:'7',version_code_major:'1',split,is_feature_split:!!split,uses_splits:[],...options},signature:{verified:true,certificates:['a'.repeat(64)]} });
+test('兼容新旧apksigner证书摘要输出', () => {
+  const digest = 'A'.repeat(64);
+  assert.deepEqual(parseSignerCertificates(`Signer #1 certificate SHA-256 digest: ${digest}\n`), [digest.toLowerCase()]);
+  assert.deepEqual(parseSignerCertificates(`V3.0 Signer: certificate SHA-256 digest: ${digest}\nV2 Signer: certificate SHA-256 digest: ${digest}\n`), [digest.toLowerCase()]);
+  assert.deepEqual(parseSignerCertificates('V3.0 Signer: certificate SHA-1 digest: nope\n'), []);
+});
 test('同CDP会话scriptId接到捕获哈希，Java跨线程只按JNI对象证据关联',()=>{
   const graph=indexEvidence('job',[{file:'network.json',value:{sessionId:'web',processEpoch:'epoch',requests:[{requestId:'1',initiator:{frames:[{scriptId:'3',scriptObserved:true,lineNumber:1,columnNumber:2},{scriptId:'unknown',scriptObserved:false}]}}]}},{file:'source.json',value:{sessionId:'web',processEpoch:'epoch',kind:'js',sha256:'1'.repeat(64),metadata:{scriptId:'3'}}},{file:'frida.json',value:{session_id:'s',script_id:'agent',traceId:'trace',event:'java-exit',invocationId:'reply',parentInvocationId:'parent',correlation:{association:'jni-isSameObject',requestId:'request',state:'reply-returned'}}}]);
   assert.equal(graph.nodes.filter(n=>n.kind==='webview-script').length,1);assert.ok(graph.edges.some(e=>e.relation==='captured-script-content'));assert.ok(graph.edges.some(e=>e.relation==='reply-returned-for-object'));assert.ok(graph.edges.some(e=>e.relation==='within-java-original-call'));

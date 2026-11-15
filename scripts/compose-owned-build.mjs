@@ -35,10 +35,16 @@ class MainActivity : ComponentActivity() {
 }
 class OwnedCounter {
  private val state=${process.argv.includes('--int-state')?'mutableIntStateOf(0)':'mutableStateOf(0)'}
+ private val secondary=mutableIntStateOf(10)
+ private val route=mutableStateOf("home")
  // long: 状态只在真实按钮回调中修改，渲染回调单独记录，不能用时间接近当作异步因果。
  fun onClick(){state.${process.argv.includes('--int-state')?'intValue':'value'}=state.${process.argv.includes('--int-state')?'intValue':'value'}+1}
+ fun onMultiStateClick(){onClick();secondary.intValue+=5}
+ fun navigate(){route.value=if(route.value=="home")"detail" else "home"}
  fun rendered(value:Int){android.util.Log.i("ReserveCompose","RENDERED="+value)}
- @Composable fun Content(){val value=state.${process.argv.includes('--int-state')?'intValue':'value'};Column{Text("RESERVE_COMPOSE_V06: "+value);Button(onClick={onClick()}){Text("Increment owned state")}};SideEffect{rendered(value)}}
+	fun renderedDerived(value:Int){android.util.Log.i("ReserveCompose","RENDERED_DERIVED="+value)}
+	fun coroutineCompleted(value:Int){android.util.Log.i("ReserveCompose","COROUTINE_COMPLETED="+value)}
+	@Composable fun Content(){val value=state.${process.argv.includes('--int-state')?'intValue':'value'};val derived=remember { derivedStateOf { state.${process.argv.includes('--int-state')?'intValue':'value'} * 2 } }.value;val second=secondary.intValue;val currentRoute=route.value;${process.argv.includes('--coroutine') ? 'LaunchedEffect(value){coroutineCompleted(value)};' : ''}Column{Text("RESERVE_COMPOSE_V07: "+value);Text("DERIVED: "+derived);Text("SECONDARY: "+second);Text("ROUTE: "+currentRoute);Button(onClick={onClick()}){Text("Increment owned state")};${process.argv.includes('--multi-state')?'Button(onClick={onMultiStateClick()}){Text("Update multi state")}':''};${process.argv.includes('--navigation')?'Button(onClick={ { navigate() } }){Text("Navigate detail")}':''}};SideEffect{rendered(value);renderedDerived(derived)}}
 }
 `);
 const result = await run(path.join(root,'gradlew'),[':app:assembleDebug',...(process.argv.includes('--offline')?['--offline']:[])],{cwd:root,timeoutMs:300000,maxBytes:2*1024*1024});
